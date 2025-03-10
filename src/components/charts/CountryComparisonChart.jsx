@@ -4,9 +4,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { CustomTooltip } from "./CustomTooltip";
 import { ChartTheme } from "./ChartTheme";
 import { Box, Typography, Paper, useTheme } from "@mui/material";
+import { useI18n } from "../../context/I18nContext";
 
 export function CountryComparisonChart({ data = [] }) {
 	const muiTheme = useTheme();
+	const { t } = useI18n();
 
 	// Ensure data is an array before processing
 	const dataArray = Array.isArray(data) ? data : [];
@@ -51,7 +53,7 @@ export function CountryComparisonChart({ data = [] }) {
 				}}
 				elevation={1}>
 				<Typography variant="body1" color="text.secondary">
-					No country data available
+					{t("charts.noData")}
 				</Typography>
 			</Paper>
 		);
@@ -112,7 +114,7 @@ export function CountryComparisonChart({ data = [] }) {
 						tickMargin={5}
 						width={55}
 						stroke={muiTheme.palette.text.secondary}>
-						<Label value="Capacity (MW)" angle={-90} position="insideLeft" style={{ fontSize: 12, fill: muiTheme.palette.text.secondary }} offset={-5} />
+						<Label value={t("charts.axis.capacity")} angle={-90} position="insideLeft" style={{ fontSize: 12, fill: muiTheme.palette.text.secondary }} offset={-5} />
 					</YAxis>
 
 					{/* Right Y-axis for investment */}
@@ -125,7 +127,7 @@ export function CountryComparisonChart({ data = [] }) {
 						tickMargin={5}
 						width={55}
 						stroke={muiTheme.palette.text.secondary}>
-						<Label value="Investment ($M)" angle={90} position="insideRight" style={{ fontSize: 12, fill: muiTheme.palette.text.secondary }} offset={10} />
+						<Label value={t("charts.label.investment")} angle={90} position="insideRight" style={{ fontSize: 12, fill: muiTheme.palette.text.secondary }} offset={10} />
 					</YAxis>
 
 					<Tooltip content={<CustomTooltip valueFormatter={formatTooltipValue} chartType="bar" />} />
@@ -141,7 +143,7 @@ export function CountryComparisonChart({ data = [] }) {
 						align="center"
 					/>
 
-					<Bar yAxisId="left" dataKey="capacity" name="Capacity (MW)" radius={[4, 4, 0, 0]} barSize={30}>
+					<Bar yAxisId="left" dataKey="capacity" name={t("charts.label.capacity")} radius={[4, 4, 0, 0]} barSize={30}>
 						{chartData.map((entry, index) => (
 							<Cell key={`cell-${index}`} fill={getCountryColor(index)} />
 						))}

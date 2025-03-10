@@ -26,6 +26,7 @@ import { CustomTooltip } from "./CustomTooltip";
 import { Box, CircularProgress, Typography, Paper, useTheme, Alert } from "@mui/material";
 import ChartSkeleton from "../ui/ChartSkeleton";
 import useChartLazyLoading from "../../hooks/useChartLazyLoading";
+import { useI18n } from "../../context/I18nContext";
 
 // Memoized chart wrapper component to prevent unnecessary re-renders
 export const ChartWrapper = memo(function ChartWrapper({ chartType, data, options, width = "100%", height = "100%", chartName = "Chart" }) {
@@ -33,6 +34,7 @@ export const ChartWrapper = memo(function ChartWrapper({ chartType, data, option
 	const [isChartLoading, setIsChartLoading] = useState(true);
 	const [activeIndex, setActiveIndex] = useState(-1);
 	const [error, setError] = useState(null);
+	const { t } = useI18n();
 
 	// Use our custom lazy loading hook
 	const { isVisible, shouldRender, ref } = useChartLazyLoading({
@@ -100,7 +102,7 @@ export const ChartWrapper = memo(function ChartWrapper({ chartType, data, option
 				return (
 					<Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
 						<Alert severity="warning" sx={{ width: "90%" }}>
-							No data available for chart
+							{t("charts.noData")}
 						</Alert>
 					</Box>
 				);
@@ -151,7 +153,7 @@ export const ChartWrapper = memo(function ChartWrapper({ chartType, data, option
 			};
 
 			// Label formatter for tooltips
-			const labelFormatter = label => `${options?.hAxis?.title || "Year"}: ${label}`;
+			const labelFormatter = label => `${options?.hAxis?.title || t("charts.axis.year")}: ${label}`;
 
 			// Calculate how many ticks we can display without overlap
 			const calculateOptimalTickCount = dataLength => {

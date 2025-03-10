@@ -52,9 +52,10 @@ import RefreshIcon from "@mui/icons-material/Refresh";
  * @param {Object} props.filterParams - Current filter parameters
  * @param {Function} props.handleFilter - Function to handle filter changes
  * @param {Function} props.resetFilters - Function to reset all filters
+ * @param {boolean} props.embedded - When true, renders just the content without the card wrapper
  * @returns {JSX.Element}
  */
-function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, filterParams = {}, handleFilter = () => {}, resetFilters = () => {} }) {
+function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, filterParams = {}, handleFilter = () => {}, resetFilters = () => {}, embedded = false }) {
 	const theme = useTheme();
 	const { convert, currency } = useCurrency();
 	const { t } = useI18n();
@@ -117,36 +118,44 @@ function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, fil
 		}
 	};
 
-	// Get unique country values from projects
-	const uniqueCountries = useMemo(() => {
-		if (!projects || projects.length === 0) return [];
-		const countriesSet = new Set(projects.map(project => project.country));
-		return Array.from(countriesSet);
-	}, [projects]);
+	// Helper function to get unique values from an array of objects by property
+	const getUniqueValues = (data, property) => {
+		return [...new Set(data.map(item => item[property]))].sort();
+	};
 
-	// Get unique project types from projects
-	const uniqueTypes = useMemo(() => {
-		if (!projects || projects.length === 0) return [];
-		const typesSet = new Set(projects.map(project => project.type));
-		return Array.from(typesSet);
-	}, [projects]);
+	// Get unique types and countries
+	const uniqueTypes = getUniqueValues(projects, "type");
+	const uniqueCountries = getUniqueValues(projects, "country");
 
-	// Filters section to render in the card header
+	// Custom filter handler to update parent's filters
+	const handleFilterChange = (field, value) => {
+		// If value is empty string, set to null to remove filter
+		const newValue = value === "" ? null : value;
+
+		// Create new filter object with updated field
+		const newFilters = {
+			...filterParams,
+			[field]: newValue
+		};
+
+		// Remove null/undefined values from filters
+		Object.keys(newFilters).forEach(key => {
+			if (newFilters[key] === null || newFilters[key] === undefined) {
+				delete newFilters[key];
+			}
+		});
+
+		// Call parent's handleFilter function
+		handleFilter(newFilters);
+	};
+
+	// Function to render filter components
 	const renderFilters = () => (
-		<Box
-			sx={{
-				display: "flex",
-				flexWrap: "wrap",
-				gap: 1,
-				alignItems: "center",
-				mt: 1,
-				pb: 1,
-				borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`
-			}}>
-			<FormControl size="small" sx={{ minWidth: 120 }}>
-				<InputLabel id="type-filter-label">Type</InputLabel>
-				<Select labelId="type-filter-label" value={filterParams.type || ""} label="Type" onChange={e => handleFilter({ type: e.target.value || null })} sx={{ minWidth: 150 }}>
-					<MenuItem value="">All Types</MenuItem>
+		<Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 1 }}>
+			<FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+				<InputLabel id="type-filter-label">{t("filter.type")}</InputLabel>
+				<Select labelId="type-filter-label" value={filterParams.type || ""} onChange={e => handleFilterChange("type", e.target.value)} label={t("filter.type")} displayEmpty>
+					<MenuItem value="">{t("filter.all")}</MenuItem>
 					{uniqueTypes.map(type => (
 						<MenuItem key={type} value={type}>
 							{type}
@@ -155,10 +164,10 @@ function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, fil
 				</Select>
 			</FormControl>
 
-			<FormControl size="small" sx={{ minWidth: 120 }}>
-				<InputLabel id="country-filter-label">Country</InputLabel>
-				<Select labelId="country-filter-label" value={filterParams.country || ""} label="Country" onChange={e => handleFilter({ country: e.target.value || null })} sx={{ minWidth: 150 }}>
-					<MenuItem value="">All Countries</MenuItem>
+			<FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+				<InputLabel id="country-filter-label">{t("filter.country")}</InputLabel>
+				<Select labelId="country-filter-label" value={filterParams.country || ""} onChange={e => handleFilterChange("country", e.target.value)} label={t("filter.country")} displayEmpty>
+					<MenuItem value="">{t("filter.all")}</MenuItem>
 					{uniqueCountries.map(country => (
 						<MenuItem key={country} value={country}>
 							{country}
@@ -166,13 +175,85 @@ function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, fil
 					))}
 				</Select>
 			</FormControl>
-
-			{Object.keys(filterParams).length > 0 && (
-				<Button variant="outlined" size="small" startIcon={<RefreshIcon />} onClick={resetFilters}>
-					Reset
-				</Button>
-			)}
 		</Box>
+	);
+
+	// Define function to render the table
+	const renderTable = () => (
+		<Table stickyHeader size="medium">
+			<TableHead>
+				<TableRow>
+					{columns.map(column => (
+						<TableCell
+							key={column.id}
+							align={column.align}
+							sx={{
+								fontWeight: 600,
+								backgroundColor: alpha(theme.palette.background.paper, 0.98),
+								color: theme.palette.text.primary,
+								py: 1.5
+							}}>
+							{column.label}
+						</TableCell>
+					))}
+				</TableRow>
+			</TableHead>
+			<TableBody>
+				{projects.map(project => (
+					<TableRow
+						key={project.name}
+						hover
+						sx={{
+							"&:last-child td, &:last-child th": { border: 0 },
+							transition: "background-color 0.2s ease",
+							"&:hover": {
+								backgroundColor: alpha(theme.palette.primary.main, 0.04)
+							}
+						}}>
+						<TableCell component="th" scope="row" sx={{ fontWeight: 500 }}>
+							{project.name}
+						</TableCell>
+						<TableCell>
+							<Box sx={{ display: "flex", alignItems: "center" }}>
+								{getProjectTypeIcon(project.type)}
+								<Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }}>
+									{project.type}
+								</Typography>
+							</Box>
+						</TableCell>
+						<TableCell>{project.country}</TableCell>
+						<TableCell>
+							<Box
+								component="span"
+								sx={{
+									display: "inline-block",
+									py: 0.5,
+									px: 1.5,
+									borderRadius: 1,
+									fontWeight: 600,
+									fontSize: "0.75rem",
+									backgroundColor: getStatusColor(project.status).bg,
+									color: getStatusColor(project.status).color,
+									minWidth: 85,
+									textAlign: "center"
+								}}>
+								{project.status}
+							</Box>
+						</TableCell>
+						<TableCell align="right" sx={{ fontWeight: 500 }}>
+							{project.capacity}
+						</TableCell>
+						<TableCell align="right" sx={{ fontWeight: 500 }}>
+							{currency.symbol}
+							{convert(project.investmentCost)}M
+						</TableCell>
+						<TableCell align="right" sx={{ fontWeight: 500, color: theme.palette.success.main }}>
+							{formatPercentage(project.irr)}
+						</TableCell>
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 
 	// Handle empty projects array
@@ -322,151 +403,54 @@ function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, fil
 
 	return (
 		<>
-			{/* Dialog for maximized view */}
-			<Dialog
-				fullWidth
-				maxWidth="xl"
-				open={maximized}
-				onClose={() => setMaximized(false)}
-				PaperProps={{
-					sx: {
-						height: "90vh",
-						maxHeight: "90vh",
-						bgcolor: theme.palette.background.paper,
-						borderRadius: 3
-					}
-				}}>
-				<DialogTitle
-					sx={{
-						display: "flex",
-						justifyContent: "space-between",
-						alignItems: "center",
-						padding: 2
+			{maximized ? (
+				<Dialog
+					fullScreen
+					open={maximized}
+					onClose={() => setMaximized(false)}
+					PaperProps={{
+						sx: {
+							bgcolor: theme.palette.background.default
+						}
 					}}>
-					<Box sx={{ display: "flex", alignItems: "center" }}>
-						<Box
-							sx={{
-								mr: 2,
-								color: theme.palette.primary.main,
-								bgcolor: alpha(theme.palette.primary.light, 0.2),
-								p: 1.5,
-								borderRadius: 2,
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center"
-							}}>
-							<Database size={24} />
+					<DialogTitle
+						sx={{
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+							padding: 2
+						}}>
+						<Box sx={{ display: "flex", alignItems: "center" }}>
+							<Box
+								sx={{
+									mr: 2,
+									color: theme.palette.primary.main,
+									bgcolor: alpha(theme.palette.primary.light, 0.2),
+									p: 1.5,
+									borderRadius: 2,
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center"
+								}}>
+								<Database size={24} />
+							</Box>
+							<Typography variant="h5" component="h2">
+								Project Portfolio
+							</Typography>
 						</Box>
-						<Typography variant="h5" component="h2">
-							Project Portfolio
-						</Typography>
-					</Box>
-					<IconButton onClick={() => setMaximized(false)} aria-label="Close maximized view">
-						<CloseIcon />
-					</IconButton>
-				</DialogTitle>
-				<DialogContent sx={{ padding: 3 }}>
-					{renderFilters()}
-					<TableContainer sx={{ height: "calc(100% - 60px)", mt: 2, borderRadius: 2, overflow: "auto" }}>
-						<Table stickyHeader>
-							<TableHead>
-								<TableRow>
-									{columns.map(column => (
-										<TableCell
-											key={column.id}
-											align={column.align}
-											sx={{
-												fontWeight: 600,
-												backgroundColor: alpha(theme.palette.background.paper, 0.98),
-												color: theme.palette.text.primary,
-												py: 1.5
-											}}>
-											{column.label}
-										</TableCell>
-									))}
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{projects.map(project => (
-									<TableRow
-										key={project.name}
-										hover
-										sx={{
-											"&:last-child td, &:last-child th": { border: 0 },
-											transition: "background-color 0.2s ease",
-											"&:hover": {
-												backgroundColor: alpha(theme.palette.primary.main, 0.04)
-											}
-										}}>
-										<TableCell component="th" scope="row" sx={{ fontWeight: 500 }}>
-											{project.name}
-										</TableCell>
-										<TableCell>
-											<Box sx={{ display: "flex", alignItems: "center" }}>
-												{getProjectTypeIcon(project.type)}
-												<Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }}>
-													{project.type}
-												</Typography>
-											</Box>
-										</TableCell>
-										<TableCell>{project.country}</TableCell>
-										<TableCell>
-											<Box
-												component="span"
-												sx={{
-													display: "inline-block",
-													py: 0.5,
-													px: 1.5,
-													borderRadius: 1,
-													fontWeight: 600,
-													fontSize: "0.75rem",
-													backgroundColor: getStatusColor(project.status).bg,
-													color: getStatusColor(project.status).color,
-													minWidth: 85,
-													textAlign: "center"
-												}}>
-												{project.status}
-											</Box>
-										</TableCell>
-										<TableCell align="right" sx={{ fontWeight: 500 }}>
-											{project.capacity}
-										</TableCell>
-										<TableCell align="right" sx={{ fontWeight: 500 }}>
-											{currency.symbol}
-											{convert(project.investmentCost)}M
-										</TableCell>
-										<TableCell align="right" sx={{ fontWeight: 500, color: theme.palette.success.main }}>
-											{formatPercentage(project.irr)}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</TableContainer>
-				</DialogContent>
-			</Dialog>
+						<IconButton onClick={() => setMaximized(false)} aria-label="Close maximized view">
+							<CloseIcon />
+						</IconButton>
+					</DialogTitle>
+					<DialogContent sx={{ padding: 3 }}>
+						{renderFilters()}
+						<TableContainer sx={{ height: "calc(100% - 60px)", mt: 2, borderRadius: 2, overflow: "auto" }}>{renderTable()}</TableContainer>
+					</DialogContent>
+				</Dialog>
+			) : null}
 
 			{/* Menu */}
-			<Menu
-				anchorEl={menuAnchorEl}
-				open={menuOpen}
-				onClose={handleMenuClose}
-				anchorOrigin={{
-					vertical: "bottom",
-					horizontal: "right"
-				}}
-				transformOrigin={{
-					vertical: "top",
-					horizontal: "right"
-				}}
-				PaperProps={{
-					elevation: 3,
-					sx: {
-						minWidth: 180,
-						borderRadius: 2,
-						mt: 1
-					}
-				}}>
+			<Menu anchorEl={menuAnchorEl} open={menuOpen} onClose={handleMenuClose} transformOrigin={{ horizontal: "right", vertical: "top" }} anchorOrigin={{ horizontal: "right", vertical: "bottom" }}>
 				<MenuItem onClick={handleMaximize}>
 					<ListItemIcon>
 						<AspectRatioIcon fontSize="small" />
@@ -488,187 +472,132 @@ function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, fil
 				</MenuItem>
 			</Menu>
 
-			{/* Card with table */}
-			<Card
-				elevation={2}
-				sx={{
-					borderRadius: 3,
-					transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-					"&:hover": {
-						boxShadow: theme.shadows[10],
-						transform: "translateY(-4px)"
-					},
-					height: "100%",
-					display: "flex",
-					flexDirection: "column",
-					position: "relative",
-					overflow: "hidden",
-					"&::after": {
-						content: '""',
-						position: "absolute",
-						top: 0,
-						right: 0,
-						width: "100%",
-						height: "5px",
-						background: `linear-gradient(90deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
-						opacity: 0.7
-					}
-				}}>
-				<CardHeader
-					title={
-						<Box sx={{ display: "flex", alignItems: "center" }}>
-							<Box
-								sx={{
-									mr: 1.5,
-									color: theme.palette.primary.main,
-									bgcolor: alpha(theme.palette.primary.light, 0.2),
-									p: 1,
-									borderRadius: 2,
-									display: "flex",
-									transition: "all 0.2s ease",
-									"&:hover": {
-										transform: "scale(1.05)",
-										bgcolor: alpha(theme.palette.primary.light, 0.3)
-									}
-								}}>
-								<Database size={20} />
-							</Box>
-							<Typography variant="h6" component="h3" fontWeight={600}>
-								Project Portfolio
-							</Typography>
-						</Box>
-					}
-					action={
-						<Box sx={{ display: "flex" }}>
-							<Tooltip title="Maximize">
-								<IconButton aria-label="maximize" onClick={handleMaximize} size="small" sx={{ mr: 0.5 }}>
-									<AspectRatioIcon fontSize="small" />
-								</IconButton>
-							</Tooltip>
-							<Tooltip title="More options">
-								<IconButton aria-label="menu" onClick={handleMenuOpen} size="small">
-									<MoreHorizIcon fontSize="small" />
-								</IconButton>
-							</Tooltip>
-						</Box>
-					}
-					sx={{
-						pb: 0,
-						"& .MuiCardHeader-action": {
-							alignSelf: "center",
-							marginTop: 0,
-							marginRight: 0
-						}
-					}}
-				/>
-				<CardContent
-					sx={{
-						flexGrow: 1,
-						p: 0,
-						pt: 1,
-						px: 2,
-						"&:last-child": { pb: 0 },
-						display: "flex",
-						flexDirection: "column"
-					}}>
+			{embedded ? (
+				// Embedded content - just the table without card wrapper
+				<Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
 					{renderFilters()}
-
 					<TableContainer
 						ref={tableRef}
 						sx={{
 							flexGrow: 1,
 							maxHeight: { xs: 300, md: 350, lg: 400 },
-							mt: 1
+							overflowY: "auto",
+							mt: 2
 						}}>
-						<Table stickyHeader size="medium">
-							<TableHead>
-								<TableRow>
-									{columns.map(column => (
-										<TableCell
-											key={column.id}
-											align={column.align}
-											sx={{
-												fontWeight: 600,
-												backgroundColor: alpha(theme.palette.background.paper, 0.98),
-												color: theme.palette.text.primary,
-												py: 1.5
-											}}>
-											{column.label}
-										</TableCell>
-									))}
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{projects.map(project => (
-									<TableRow
-										key={project.name}
-										hover
-										sx={{
-											"&:last-child td, &:last-child th": { border: 0 },
-											transition: "background-color 0.2s ease",
-											"&:hover": {
-												backgroundColor: alpha(theme.palette.primary.main, 0.04)
-											}
-										}}>
-										<TableCell component="th" scope="row" sx={{ fontWeight: 500 }}>
-											{project.name}
-										</TableCell>
-										<TableCell>
-											<Box sx={{ display: "flex", alignItems: "center" }}>
-												{getProjectTypeIcon(project.type)}
-												<Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }}>
-													{project.type}
-												</Typography>
-											</Box>
-										</TableCell>
-										<TableCell>{project.country}</TableCell>
-										<TableCell>
-											<Box
-												component="span"
-												sx={{
-													display: "inline-block",
-													py: 0.5,
-													px: 1.5,
-													borderRadius: 1,
-													fontWeight: 600,
-													fontSize: "0.75rem",
-													backgroundColor: getStatusColor(project.status).bg,
-													color: getStatusColor(project.status).color,
-													minWidth: 85,
-													textAlign: "center"
-												}}>
-												{project.status}
-											</Box>
-										</TableCell>
-										<TableCell align="right" sx={{ fontWeight: 500 }}>
-											{project.capacity}
-										</TableCell>
-										<TableCell align="right" sx={{ fontWeight: 500 }}>
-											{currency.symbol}
-											{convert(project.investmentCost)}M
-										</TableCell>
-										<TableCell align="right" sx={{ fontWeight: 500, color: theme.palette.success.main }}>
-											{formatPercentage(project.irr)}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+						{renderTable()}
 					</TableContainer>
+					{pagination}
+				</Box>
+			) : (
+				// Full card with table
+				<Card
+					elevation={2}
+					sx={{
+						borderRadius: 3,
+						transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+						"&:hover": {
+							boxShadow: theme.shadows[10],
+							transform: "translateY(-4px)"
+						},
+						height: "100%",
+						display: "flex",
+						flexDirection: "column",
+						position: "relative",
+						overflow: "hidden",
+						"&::after": {
+							content: '""',
+							position: "absolute",
+							top: 0,
+							right: 0,
+							width: "100%",
+							height: "5px",
+							background: `linear-gradient(90deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
+							opacity: 0.7
+						}
+					}}>
+					<CardHeader
+						title={
+							<Box sx={{ display: "flex", alignItems: "center" }}>
+								<Box
+									sx={{
+										mr: 1.5,
+										color: theme.palette.primary.main,
+										bgcolor: alpha(theme.palette.primary.light, 0.2),
+										p: 1,
+										borderRadius: 2,
+										display: "flex",
+										transition: "all 0.2s ease",
+										"&:hover": {
+											transform: "scale(1.05)",
+											bgcolor: alpha(theme.palette.primary.light, 0.3)
+										}
+									}}>
+									<Database size={20} />
+								</Box>
+								<Typography variant="h6" component="h3" fontWeight={600}>
+									Project Portfolio
+								</Typography>
+							</Box>
+						}
+						action={
+							<Box sx={{ display: "flex" }}>
+								<Tooltip title="Maximize">
+									<IconButton aria-label="maximize" onClick={handleMaximize} size="small" sx={{ mr: 0.5 }}>
+										<AspectRatioIcon fontSize="small" />
+									</IconButton>
+								</Tooltip>
+								<Tooltip title="More options">
+									<IconButton aria-label="menu" onClick={handleMenuOpen} size="small">
+										<MoreHorizIcon fontSize="small" />
+									</IconButton>
+								</Tooltip>
+							</Box>
+						}
+						sx={{
+							pb: 0,
+							"& .MuiCardHeader-action": {
+								alignSelf: "center",
+								marginTop: 0,
+								marginRight: 0
+							}
+						}}
+					/>
+					<CardContent
+						sx={{
+							flexGrow: 1,
+							p: 0,
+							pt: 1,
+							px: 2,
+							"&:last-child": { pb: 0 },
+							display: "flex",
+							flexDirection: "column"
+						}}>
+						{renderFilters()}
 
-					{/* Pagination */}
-					{pagination && (
-						<Box
+						<TableContainer
+							ref={tableRef}
 							sx={{
-								p: 1,
-								borderTop: `1px solid ${theme.palette.divider}`,
-								backgroundColor: alpha(theme.palette.background.paper, 0.98)
+								flexGrow: 1,
+								maxHeight: { xs: 300, md: 350, lg: 400 },
+								mt: 1
 							}}>
-							{pagination}
-						</Box>
-					)}
-				</CardContent>
-			</Card>
+							{renderTable()}
+						</TableContainer>
+
+						{/* Pagination */}
+						{pagination && (
+							<Box
+								sx={{
+									p: 1,
+									borderTop: `1px solid ${theme.palette.divider}`,
+									backgroundColor: alpha(theme.palette.background.paper, 0.98)
+								}}>
+								{pagination}
+							</Box>
+						)}
+					</CardContent>
+				</Card>
+			)}
 		</>
 	);
 }

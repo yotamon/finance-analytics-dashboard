@@ -12,10 +12,10 @@ export function RevenueEbitdaChart({ data }) {
 
 	const options = {
 		hAxis: {
-			title: "Year"
+			title: t("charts.axis.year")
 		},
 		vAxis: {
-			title: `${t("metric.value")} (${currency.code} Millions)`,
+			title: `${t("charts.axis.value")} (${currency.code} Millions)`,
 			format: `${currency.symbol}#M`
 		},
 		series: {

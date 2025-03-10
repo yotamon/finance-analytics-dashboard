@@ -1,7 +1,10 @@
 import React from "react";
 import { ChartWrapper } from "./ChartWrapper";
+import { useI18n } from "../../context/I18nContext";
 
 export function ProjectTypeChart({ data }) {
+	const { t } = useI18n();
+
 	// Group projects by type and calculate total capacity
 	const projectTypes = data.reduce((acc, project) => {
 		const type = project.type;
@@ -18,7 +21,7 @@ export function ProjectTypeChart({ data }) {
 	}, {});
 
 	// Convert to array for the chart - keeping Google Charts format for compatibility
-	const chartData = [["Project Type", "Capacity (MW)"], ...Object.values(projectTypes).map(type => [type.name, type.capacity])];
+	const chartData = [[t("charts.label.projectType"), t("charts.label.capacity")], ...Object.values(projectTypes).map(type => [type.name, type.capacity])];
 
 	// Colors for different project types
 	const sliceColors = [
