@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useCurrency } from "../../context/CurrencyContext";
 import { useI18n } from "../../context/I18nContext";
 import { Box, useTheme, Typography } from "@mui/material";
@@ -29,9 +30,17 @@ export function RevenueEbitdaChart({ data }) {
   // Value formatter for tooltips
   const valueFormatter = (value) => `${currency.symbol}${value.toFixed(1)}M`;
 
-  // Custom tooltip that shows EBITDA margin percentage
+  /* eslint-disable react/prop-types */
+  /**
+   * Custom tooltip that shows EBITDA margin percentage
+   * @param {Object} props - The tooltip props
+   * @param {number} props.itemIndex - The index of the hovered item
+   * @returns {React.ReactNode} - The tooltip component
+   */
   const customTooltip = (props) => {
-    const { itemIndex, series, axisValue } = props;
+    // Destructure only the props we need to avoid unused variable warnings
+    const { itemIndex } = props;
+    /* eslint-enable react/prop-types */
 
     // If item index is undefined, don't render tooltip
     if (itemIndex === undefined) return null;
@@ -116,9 +125,8 @@ export function RevenueEbitdaChart({ data }) {
             opacity: 0.8,
           }}
         >
-          {t("charts.revenueEbitda.subtitle", {
-            defaultValue: "Showing substantial growth from 2024-2029 as projects come online",
-          })}
+          {t("charts.revenueEbitda.subtitle") ||
+            "Showing substantial growth from 2024-2029 as projects come online"}
         </Typography>
 
         <BarChart
@@ -215,3 +223,12 @@ export function RevenueEbitdaChart({ data }) {
     </motion.div>
   );
 }
+
+// Add PropTypes for the data prop
+RevenueEbitdaChart.propTypes = {
+  data: PropTypes.shape({
+    years: PropTypes.array.isRequired,
+    revenues: PropTypes.array.isRequired,
+    ebitda: PropTypes.array.isRequired,
+  }).isRequired,
+};
