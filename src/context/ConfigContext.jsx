@@ -31,7 +31,8 @@ export function ConfigProvider({ children }) {
 				setMergedConfig(deepMerge(config, parsedSettings));
 			}
 		} catch (error) {
-			console.error("Failed to load user settings:", error);
+			/* eslint-disable-next-line no-console */
+console.error("Failed to load user settings:", error);
 		}
 	}, []);
 
@@ -45,14 +46,15 @@ export function ConfigProvider({ children }) {
 			});
 
 			if (Object.keys(userSettings).length > 0) {
-				console.log("User settings applied:", userSettings);
+				/* eslint-disable-next-line no-console */
+console.log("User settings applied:", userSettings);
 			}
 		}
 	}, [mergedConfig, userSettings]);
 
 	/**
-	 * Helper function to access a nested property in the merged config using a dot-notation path
-	 */
+	* Helper function to access a nested property in the merged config using a dot-notation path
+	*/
 	const getConfigFromMerged = (path, config, defaultValue) => {
 		if (!path) return config;
 
@@ -70,19 +72,19 @@ export function ConfigProvider({ children }) {
 	};
 
 	/**
-	 * Get a configuration value from the merged config (default + user settings)
-	 */
+	* Get a configuration value from the merged config (default + user settings)
+	*/
 	const getConfigValue = (path, defaultValue) => {
 		return getConfigFromMerged(path, mergedConfig, defaultValue);
 	};
 
 	/**
-	 * Update a configuration value at runtime and persist to localStorage
-	 *
-	 * @param {string} path - Dot-notation path to the configuration property
-	 * @param {any} value - New value to set
-	 * @param {boolean} reset - If true, will reset all user settings
-	 */
+	* Update a configuration value at runtime and persist to localStorage
+	*
+	* @param {string} path - Dot-notation path to the configuration property
+	* @param {any} value - New value to set
+	* @param {boolean} reset - If true, will reset all user settings
+	*/
 	const updateConfig = (path, value, reset = false) => {
 		if (reset) {
 			// Clear all user settings
@@ -107,8 +109,8 @@ export function ConfigProvider({ children }) {
 	};
 
 	/**
-	 * Helper function to set a value at a nested path in an object
-	 */
+	* Helper function to set a value at a nested path in an object
+	*/
 	const setNestedValue = (obj, path, value) => {
 		if (!path) return;
 
@@ -127,8 +129,8 @@ export function ConfigProvider({ children }) {
 	};
 
 	/**
-	 * Helper function to deeply merge objects
-	 */
+	* Helper function to deeply merge objects
+	*/
 	const deepMerge = (target, source) => {
 		const output = { ...target };
 
@@ -154,8 +156,8 @@ export function ConfigProvider({ children }) {
 	};
 
 	/**
-	 * Check if a feature is enabled
-	 */
+	* Check if a feature is enabled
+	*/
 	const isFeatureEnabled = featureName => {
 		const path = `features.enable${featureName.charAt(0).toUpperCase() + featureName.slice(1)}`;
 		return getConfigValue(path, false);

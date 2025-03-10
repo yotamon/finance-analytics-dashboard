@@ -20,7 +20,8 @@ function UploadPage() {
 					await uploadFile(acceptedFiles[0]);
 					navigate("/dashboard");
 				} catch (error) {
-					console.error("Upload error:", error);
+					/* eslint-disable-next-line no-console */
+console.error("Upload error:", error);
 				}
 			}
 		},

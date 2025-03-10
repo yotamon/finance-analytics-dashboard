@@ -23,6 +23,7 @@ import {
   DialogActions,
   Button,
   Slide,
+  CircularProgress,
 } from "@mui/material";
 import { useI18n } from "../../context/I18nContext";
 import {
@@ -47,11 +48,14 @@ import {
   AspectRatio as AspectRatioIcon,
   Download as DownloadIcon,
   ViewColumn as ViewColumnIcon,
+  InsertChartOutlined,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { alpha } from "@mui/material/styles";
 import PropTypes from "prop-types";
 import { debounce } from "lodash";
+import { useLocation } from "react-router-dom";
 
 // Custom CSS to fix layout issues
 const customStyles = {
@@ -330,6 +334,79 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
+// Define a custom ResizeHandle component for better cursor tracking
+const CustomResizeHandle = React.forwardRef(function CustomResizeHandle(props, ref) {
+  const { handleAxis, ...restProps } = props;
+
+  // Default to 'se' if handleAxis is not provided
+  const axis = handleAxis || "se";
+
+  // Improve cursor tracking by adding specific styles per axis
+  const getAxisSpecificStyles = () => {
+    switch (axis) {
+      case "se":
+        return {
+          bottom: "-8px",
+          right: "-8px",
+          cursor: "se-resize",
+          backgroundColor: "rgba(25, 118, 210, 0.2)",
+          borderColor: "rgba(25, 118, 210, 0.7)",
+        };
+      case "sw":
+        return {
+          bottom: "-8px",
+          left: "-8px",
+          cursor: "sw-resize",
+          backgroundColor: "rgba(25, 118, 210, 0.2)",
+          borderColor: "rgba(25, 118, 210, 0.7)",
+        };
+      case "ne":
+        return {
+          top: "-8px",
+          right: "-8px",
+          cursor: "ne-resize",
+          backgroundColor: "rgba(25, 118, 210, 0.2)",
+          borderColor: "rgba(25, 118, 210, 0.7)",
+        };
+      case "nw":
+        return {
+          top: "-8px",
+          left: "-8px",
+          cursor: "nw-resize",
+          backgroundColor: "rgba(25, 118, 210, 0.2)",
+          borderColor: "rgba(25, 118, 210, 0.7)",
+        };
+      default:
+        return {};
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={`react-resizable-handle react-resizable-handle-${axis}`}
+      style={{
+        position: "absolute",
+        width: "24px",
+        height: "24px",
+        background: "transparent",
+        border: "2px solid transparent",
+        borderRadius: "50%",
+        zIndex: 10,
+        userSelect: "none",
+        touchAction: "none",
+        ...getAxisSpecificStyles(),
+      }}
+      {...restProps}
+    />
+  );
+});
+
+// Add PropTypes for CustomResizeHandle
+CustomResizeHandle.propTypes = {
+  handleAxis: PropTypes.string,
+};
+
 export default function DraggableDashboard({
   financialData,
   projectData,
@@ -340,10 +417,27 @@ export default function DraggableDashboard({
 }) {
   const theme = useTheme();
   const { t } = useI18n();
-  const [layouts, setLayouts] = useState(savedLayouts || DEFAULT_LAYOUTS);
+  const location = useLocation(); // Get current route location
+
+  // Initialize with savedLayouts if provided, otherwise use defaults
+  // Use useState with callback to ensure proper initial state
+  const [layouts, setLayouts] = useState(() => {
+    if (savedLayouts && Object.keys(savedLayouts).length > 0) {
+      /* eslint-disable-next-line no-console */
+      console.log("Initializing with savedLayouts:", savedLayouts);
+      return savedLayouts;
+    }
+    /* eslint-disable-next-line no-console */
+    console.log("Using DEFAULT_LAYOUTS");
+    return DEFAULT_LAYOUTS;
+  });
+
   const [maximizedChart, setMaximizedChart] = useState(null);
   const [activeCharts, setActiveCharts] = useState([]);
   const [mounted, setMounted] = useState(false);
+
+  // Add state to track the complete readiness of the dashboard
+  const [isDashboardReady, setIsDashboardReady] = useState(false);
 
   // Menu state for chart options
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
@@ -361,6 +455,13 @@ export default function DraggableDashboard({
   // Add state for current resize dimensions
   const [currentResize, setCurrentResize] = useState(null);
 
+  // Reference to track grid stability
+  const gridStabilityRef = useRef({
+    attemptCount: 0,
+    isFullyReady: false,
+    isMounted: false,
+  });
+
   // Add a dedicated function to reset the isResizing state safely
   const resetResizingState = useCallback(() => {
     setIsResizing(false);
@@ -377,8 +478,18 @@ export default function DraggableDashboard({
     [resetResizingState]
   );
 
+  // Get the current breakpoint based on window width
+  const getCurrentBreakpoint = useCallback(() => {
+    const width = window.innerWidth;
+    if (width >= BREAKPOINTS.lg) return "lg";
+    if (width >= BREAKPOINTS.md) return "md";
+    if (width >= BREAKPOINTS.sm) return "sm";
+    if (width >= BREAKPOINTS.xs) return "xs";
+    return "xxs";
+  }, []);
+
   // Force re-render of grid layout to reflect changes immediately
-  const forceGridUpdate = () => {
+  const forceGridUpdate = useCallback(() => {
     // Mark that we're forcing an update to prevent conflicts with other changes
     const wasResizing = isResizing;
     setIsResizing(true);
@@ -388,183 +499,127 @@ export default function DraggableDashboard({
 
     // Use RAF for better performance than setTimeout
     requestAnimationFrame(() => {
-      // Then force a rerender by cloning and updating layouts state
-      setLayouts((prevLayouts) => {
-        // Create a deep copy to ensure React detects the change
-        return JSON.parse(JSON.stringify(prevLayouts));
-      });
+      // Force layout recalculation without changing the actual layout data
+      // This prevents resetting to default layouts while still updating the UI
+      window.dispatchEvent(new Event("resize"));
 
-      // Reset resizing flag after a short delay to ensure full render completes
+      // Only update layouts state if necessary, using the current layouts
+      // Not doing a deep copy prevents accidentally losing user changes
       setTimeout(() => {
         setIsResizing(wasResizing);
       }, 50);
     });
-  };
+  }, [isResizing]);
 
-  const handleChangeCardSize = (chartId, size) => {
-    // Find the current layout
-    const currentBreakpoint = getCurrentBreakpoint();
-    const currentLayouts = layouts[currentBreakpoint] || [];
+  // Handle card size change
+  const handleChangeCardSize = useCallback(
+    (chartId, size) => {
+      // Find the current layout
+      const currentBreakpoint = getCurrentBreakpoint();
+      const currentLayouts = layouts[currentBreakpoint] || [];
 
-    // Find the chart in the layout
-    const chartLayout = currentLayouts.find((item) => item.i === chartId);
+      // Find the chart in the layout
+      const chartLayout = currentLayouts.find((item) => item.i === chartId);
 
-    if (!chartLayout) {
-      console.warn(`Chart ${chartId} not found in layout`);
-      return;
-    }
+      if (!chartLayout) {
+        /* eslint-disable-next-line no-console */
+        console.warn(`Chart ${chartId} not found in layout`);
+        return;
+      }
 
-    // Get max columns for current breakpoint
-    const maxCols =
-      {
-        lg: 12,
-        md: 10,
-        sm: 6,
-        xs: 4,
-        xxs: 2,
-      }[currentBreakpoint] || 12;
+      // Get max columns for current breakpoint
+      const maxCols =
+        {
+          lg: 12,
+          md: 10,
+          sm: 6,
+          xs: 4,
+          xxs: 2,
+        }[currentBreakpoint] || 12;
 
-    // Calculate new width based on size option and max columns
-    let newWidth;
-    if (size === "1/3") {
-      newWidth = Math.max(Math.round(maxCols / 3), 1);
-    } else if (size === "1/2") {
-      newWidth = Math.max(Math.round(maxCols / 2), 1);
-    } else {
-      // "full"
-      newWidth = maxCols;
-    }
+      // Calculate new width based on size option and max columns
+      let newWidth;
+      if (size === "1/3") {
+        newWidth = Math.max(Math.round(maxCols / 3), 1);
+      } else if (size === "1/2") {
+        newWidth = Math.max(Math.round(maxCols / 2), 1);
+      } else {
+        // "full"
+        newWidth = maxCols;
+      }
 
-    // Set appropriate minW - make it smaller than the desired width to avoid constraint warnings
-    const minW = Math.max(1, Math.floor(newWidth * 0.8));
+      // Set appropriate minW - make it smaller than the desired width to avoid constraint warnings
+      const minW = Math.max(1, Math.floor(newWidth * 0.8));
 
-    // Create a deep copy of layouts to ensure React detects the change
-    const newLayouts = JSON.parse(JSON.stringify(layouts));
-    const newCurrentLayout = newLayouts[currentBreakpoint];
-    const chartIndex = newCurrentLayout.findIndex((item) => item.i === chartId);
+      // Create a deep copy of layouts to ensure React detects the change
+      const newLayouts = JSON.parse(JSON.stringify(layouts));
+      const newCurrentLayout = newLayouts[currentBreakpoint];
+      const chartIndex = newCurrentLayout.findIndex((item) => item.i === chartId);
 
-    console.log(
-      `Changing ${chartId} width from ${chartLayout.w} to ${newWidth} (${size}) at breakpoint ${currentBreakpoint}`
-    );
+      console.log(
+        `Changing ${chartId} width from ${chartLayout.w} to ${newWidth} (${size}) at breakpoint ${currentBreakpoint}`
+      );
 
-    // Update the width and constraints
-    newCurrentLayout[chartIndex].w = newWidth;
-    newCurrentLayout[chartIndex].minW = minW;
+      // Update the width and constraints
+      newCurrentLayout[chartIndex].w = newWidth;
+      newCurrentLayout[chartIndex].minW = minW;
 
-    // Adjust x position if card would go off grid
-    if (newCurrentLayout[chartIndex].x + newWidth > maxCols) {
-      newCurrentLayout[chartIndex].x = Math.max(0, maxCols - newWidth);
-    }
+      // Adjust x position if card would go off grid
+      if (newCurrentLayout[chartIndex].x + newWidth > maxCols) {
+        newCurrentLayout[chartIndex].x = Math.max(0, maxCols - newWidth);
+      }
 
-    // Update the layouts
-    setLayouts(newLayouts);
+      // Update the layouts
+      setLayouts(newLayouts);
 
-    // Save the layouts and trigger onLayoutChange
-    if (onLayoutChange) {
-      onLayoutChange(newLayouts);
-    }
+      // Save the layouts and trigger onLayoutChange
+      if (onLayoutChange) {
+        onLayoutChange(newLayouts);
+      }
 
-    // Force grid update using the helper function
-    forceGridUpdate();
+      // Force grid update using the helper function
+      forceGridUpdate();
 
-    // Close menus
-    setSizeMenuAnchorEl(null);
-    setMenuAnchorEl(null);
-  };
-
-  // Get the current breakpoint based on window width
-  const getCurrentBreakpoint = () => {
-    const width = window.innerWidth;
-    if (width >= BREAKPOINTS.lg) return "lg";
-    if (width >= BREAKPOINTS.md) return "md";
-    if (width >= BREAKPOINTS.sm) return "sm";
-    if (width >= BREAKPOINTS.xs) return "xs";
-    return "xxs";
-  };
+      // Close menus
+      setSizeMenuAnchorEl(null);
+      setMenuAnchorEl(null);
+    },
+    [layouts, getCurrentBreakpoint, forceGridUpdate, onLayoutChange]
+  );
 
   // Handle size menu open
-  const handleSizeMenuOpen = (event, chartId) => {
+  const handleSizeMenuOpen = useCallback((event, chartId) => {
     setSizeMenuAnchorEl(event.currentTarget);
     setActiveMenu(chartId);
     // Don't close the main menu
     event.stopPropagation();
-  };
-
-  // Handle size menu close
-  const handleSizeMenuClose = () => {
-    setSizeMenuAnchorEl(null);
-  };
-
-  // Handle menu open
-  const handleMenuOpen = (event, chartId) => {
-    setMenuAnchorEl(event.currentTarget);
-    setActiveMenu(chartId);
-  };
-
-  // Handle menu close
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
-    setActiveMenu(null);
-  };
-
-  // Effect to update when savedLayouts changes from parent
-  useEffect(() => {
-    if (savedLayouts) {
-      setLayouts(savedLayouts);
-    }
-  }, [savedLayouts]);
-
-  // Initialize active charts from layouts
-  useEffect(() => {
-    // Extract all unique chart IDs from layouts
-    const chartIds = new Set();
-    Object.values(layouts).forEach((layout) => {
-      layout.forEach((item) => chartIds.add(item.i));
-    });
-    setActiveCharts(Array.from(chartIds));
-
-    // Set mounted to true after initial render to avoid layout jumping
-    setMounted(true);
-
-    // Force layout calculation after a delay to ensure proper rendering
-    const timer = setTimeout(() => {
-      forceGridUpdate();
-    }, 200);
-
-    return () => clearTimeout(timer);
   }, []);
 
-  // Effect to handle resize events
-  useEffect(() => {
-    if (!mounted) return;
+  // Handle size menu close
+  const handleSizeMenuClose = useCallback(() => {
+    setSizeMenuAnchorEl(null);
+  }, []);
 
-    // Force layout recalculation on window resize
-    const handleResize = () => {
-      // Update layout after resize with deep copy to ensure React detects the change
-      setTimeout(() => {
-        setLayouts((prevLayouts) => JSON.parse(JSON.stringify(prevLayouts)));
-      }, 100);
-    };
+  // Handle menu open
+  const handleMenuOpen = useCallback((event, chartId) => {
+    setMenuAnchorEl(event.currentTarget);
+    setActiveMenu(chartId);
+  }, []);
 
-    window.addEventListener("resize", handleResize);
-
-    // Force initial layout calculation after mounting
-    handleResize();
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [mounted]);
+  // Handle menu close
+  const handleMenuClose = useCallback(() => {
+    setActiveMenu(null);
+  }, []);
 
   // Handle resize event
-  const onResize = (layout, oldItem, newItem) => {
-    // Mark that we're currently resizing
-    setIsResizing(true);
-
-    // Only log the resize progress without updating state during active resize
+  const onResize = useCallback((layout, oldItem, newItem) => {
+    // Enhanced cursor tracking during resize
     console.log(
       `Resizing chart ${newItem.i} from ${oldItem.w}x${oldItem.h} to ${newItem.w}x${newItem.h}`
     );
+
+    // Mark that we're currently resizing
+    setIsResizing(true);
 
     // Store the current resize dimensions for smoother updates
     setCurrentResize({
@@ -572,124 +627,270 @@ export default function DraggableDashboard({
       w: newItem.w,
       h: newItem.h,
     });
-  };
 
-  // Handle when resize stops
-  const onResizeStop = (layout, oldItem, newItem) => {
-    console.log(
-      `Resize complete for ${newItem.i} from ${oldItem.w}x${oldItem.h} to ${newItem.w}x${newItem.h}`
-    );
-
-    // Remove actively-resizing class
+    // Find the element being resized and enhance visual feedback
     const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
     if (el) {
-      el.classList.remove("actively-resizing");
+      el.style.zIndex = "1000";
+      // Force immediate visual updates
+      el.style.transition = "none";
+      // Ensure consistent transform origin
+      el.style.transformOrigin = "center center";
     }
 
-    // Create a deep copy of the layouts
-    const newLayouts = JSON.parse(JSON.stringify(layouts));
-    const currentBreakpoint = getCurrentBreakpoint();
+    // Important: Don't update the layout during active resize to prevent jumping
+  }, []);
 
-    // Find and update the item that was resized
-    if (newLayouts[currentBreakpoint]) {
-      const itemIndex = newLayouts[currentBreakpoint].findIndex((item) => item.i === newItem.i);
+  // Handle when resize stops
+  const onResizeStop = useCallback(
+    (layout, oldItem, newItem) => {
+      console.log(
+        `Resize complete for ${newItem.i} from ${oldItem.w}x${oldItem.h} to ${newItem.w}x${newItem.h}`
+      );
 
-      if (itemIndex !== -1) {
-        // Update the width and height
-        newLayouts[currentBreakpoint][itemIndex] = {
-          ...newLayouts[currentBreakpoint][itemIndex],
-          w: newItem.w,
-          h: newItem.h,
-          // Ensure minW is not larger than the new width
-          minW: Math.min(newLayouts[currentBreakpoint][itemIndex].minW || 1, newItem.w),
-        };
+      // Remove actively-resizing class and reset styles
+      const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
+      if (el) {
+        el.classList.remove("actively-resizing");
+        el.style.zIndex = "";
+        el.style.transition = "";
+      }
 
-        // Update layouts
-        setLayouts(newLayouts);
+      // Create a deep copy of the current layouts
+      const newLayouts = JSON.parse(JSON.stringify(layouts));
+      const currentBreakpoint = getCurrentBreakpoint();
 
-        // Call onLayoutChange if provided
-        if (onLayoutChange) {
-          onLayoutChange(newLayouts);
+      // Find and update the item that was resized
+      if (newLayouts[currentBreakpoint]) {
+        const itemIndex = newLayouts[currentBreakpoint].findIndex((item) => item.i === newItem.i);
+
+        if (itemIndex !== -1) {
+          // Update the width and height with precise values
+          newLayouts[currentBreakpoint][itemIndex] = {
+            ...newLayouts[currentBreakpoint][itemIndex],
+            w: newItem.w,
+            h: newItem.h,
+            // Ensure minW is not larger than the new width
+            minW: Math.min(newLayouts[currentBreakpoint][itemIndex].minW || 1, newItem.w),
+          };
+
+          // Update layouts with a single state update
+          setLayouts(newLayouts);
+
+          // Call onLayoutChange if provided, but after a short delay
+          // to ensure DOM has settled
+          if (onLayoutChange) {
+            setTimeout(() => {
+              onLayoutChange(newLayouts);
+            }, 50);
+          }
         }
       }
+
+      // Clear resize state
+      setCurrentResize(null);
+
+      // Allow a short delay before clearing the resizing flag
+      // This helps prevent layout jumps during the transition
+      setTimeout(() => {
+        setIsResizing(false);
+
+        // Force window resize to ensure charts redraw properly
+        window.dispatchEvent(new Event("resize"));
+      }, 100);
+    },
+    [layouts, getCurrentBreakpoint, onLayoutChange]
+  );
+
+  // Handle drag operation on grid items
+  const onDrag = useCallback(() => {
+    if (!isResizing) {
+      setIsResizing(true);
     }
+  }, [isResizing]);
 
-    // Clear resize state
-    setCurrentResize(null);
-
-    // Use debounced reset for better performance
-    debouncedResetResizingState();
-  };
-
-  // Handle layout changes
-  const handleLayoutChange = (currentLayout, allLayouts) => {
-    // Skip if layouts are not valid
-    if (!allLayouts || Object.keys(allLayouts).length === 0) {
-      return;
-    }
-
-    // Don't update layouts during a resize operation to prevent conflicts
-    if (isResizing) {
-      console.log("Layout change during resize - skipping update");
-      return;
-    }
-
-    // Performance optimization - compare with previous layouts
-    // to avoid unnecessary updates due to minor grid recalculations
-    const currentBreakpoint = getCurrentBreakpoint();
-    const prevBreakpointLayouts = layouts[currentBreakpoint] || [];
-    const newBreakpointLayouts = allLayouts[currentBreakpoint] || [];
-
-    // Skip if current layout is same length and no significant changes
-    if (prevBreakpointLayouts.length === newBreakpointLayouts.length) {
-      const hasSignificantChanges = newBreakpointLayouts.some((newItem, index) => {
-        const prevItem = prevBreakpointLayouts[index];
-        if (!prevItem || prevItem.i !== newItem.i) return true;
-
-        // Only care about meaningful position/size changes (threshold of 1 unit)
-        return (
-          Math.abs(prevItem.x - newItem.x) > 1 ||
-          Math.abs(prevItem.y - newItem.y) > 1 ||
-          Math.abs(prevItem.w - newItem.w) > 1 ||
-          Math.abs(prevItem.h - newItem.h) > 1
-        );
-      });
-
-      if (!hasSignificantChanges) {
+  // Handle when drag stops
+  const onDragStop = useCallback(
+    (layout, oldItem, newItem) => {
+      // Skip if in a bad state or unmounted
+      if (!isDashboardReady || !gridStabilityRef.current.isFullyReady) {
         return;
       }
-    }
 
-    // Validate each item to ensure it meets constraints
-    const validatedLayouts = { ...allLayouts };
-    Object.keys(validatedLayouts).forEach((breakpoint) => {
-      if (validatedLayouts[breakpoint]) {
-        validatedLayouts[breakpoint] = validatedLayouts[breakpoint].map((item) => {
-          // Ensure minW is never greater than w
-          return {
-            ...item,
-            minW: Math.min(item.minW || 1, item.w),
+      /* eslint-disable-next-line no-console */
+      console.log(`Drag complete for ${newItem.i} to position x:${newItem.x}, y:${newItem.y}`);
+
+      // Create a deep copy of the layouts to ensure we're not mutating references
+      const newLayouts = JSON.parse(JSON.stringify(layouts));
+      const currentBreakpoint = getCurrentBreakpoint();
+
+      // Find and update the item that was dragged
+      if (newLayouts[currentBreakpoint]) {
+        const itemIndex = newLayouts[currentBreakpoint].findIndex((item) => item.i === newItem.i);
+
+        if (itemIndex !== -1) {
+          // Update position with the new x, y values
+          newLayouts[currentBreakpoint][itemIndex] = {
+            ...newLayouts[currentBreakpoint][itemIndex],
+            x: newItem.x,
+            y: newItem.y,
           };
-        });
+
+          // Update layouts with a single state update for better performance
+          setLayouts(newLayouts);
+
+          // Notify parent of layout changes if callback provided
+          if (onLayoutChange) {
+            // Small delay to ensure DOM has updated
+            setTimeout(() => {
+              onLayoutChange(newLayouts);
+            }, 100);
+          }
+        }
       }
-    });
 
-    // Create a deep copy to ensure we're not mutating references
-    const layoutsCopy = JSON.parse(JSON.stringify(validatedLayouts));
+      // Fix for proper cursor position after drag
+      const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
+      if (el) {
+        el.classList.remove("dragging");
+        el.style.cursor = "";
+        el.style.zIndex = "";
+      }
 
-    // Update internal state
-    setLayouts(layoutsCopy);
+      // Delayed reset of resize state for smoother transitions
+      setTimeout(() => {
+        setIsResizing(false);
+      }, 100);
+    },
+    [isDashboardReady, layouts, onLayoutChange, getCurrentBreakpoint]
+  );
 
-    // Notify parent component if callback exists
-    if (onLayoutChange) {
-      onLayoutChange(layoutsCopy);
+  // Modified draggable handlers with strict safety checks
+  const onDragStart = useCallback(
+    (layout, oldItem, newItem, placeholder, e, element) => {
+      // Comprehensive safety check
+      if (!isDashboardReady || !gridStabilityRef.current.isFullyReady) {
+        console.log("Preventing drag: Dashboard not fully ready");
+        if (e) {
+          if (e.preventDefault) e.preventDefault();
+          if (e.stopPropagation) e.stopPropagation();
+        }
+        return false;
+      }
+
+      // Continue only when we're 100% sure it's safe
+      if (element) {
+        element.classList.add("dragging");
+      }
+      setIsResizing(true);
+      return true;
+    },
+    [isDashboardReady]
+  );
+
+  const onResizeStart = useCallback(
+    (layout, oldItem, newItem, placeholder, e, element) => {
+      // Comprehensive safety check
+      if (!isDashboardReady || !gridStabilityRef.current.isFullyReady) {
+        console.log("Preventing resize: Dashboard not fully ready");
+        if (e) {
+          if (e.preventDefault) e.preventDefault();
+          if (e.stopPropagation) e.stopPropagation();
+        }
+        return false;
+      }
+
+      setIsResizing(true);
+
+      // Ensure minW constraints are valid
+      const currentBreakpoint = getCurrentBreakpoint();
+      if (layouts[currentBreakpoint]) {
+        const item = layouts[currentBreakpoint].find((i) => i.i === oldItem.i);
+        if (item) {
+          // Ensure minW is never larger than w
+          item.minW = Math.min(item.minW || 1, item.w);
+
+          // Add resize indicator class for visual feedback
+          const el = document.querySelector(`[data-grid-id="${oldItem.i}"]`);
+          if (el) {
+            el.classList.add("actively-resizing");
+          }
+        }
+      }
+
+      return true;
+    },
+    [isDashboardReady, layouts, getCurrentBreakpoint]
+  );
+
+  // Establish the dashboard ready state with multiple checks and a safe delay
+  useEffect(() => {
+    // Reset readiness when route or key props change
+    setIsDashboardReady(false);
+    gridStabilityRef.current = {
+      attemptCount: 0,
+      isFullyReady: false,
+      isMounted: false,
+    };
+
+    let isMounted = true;
+
+    // Step 1: Mark component as mounted
+    const mountTimer = setTimeout(() => {
+      if (isMounted) {
+        setMounted(true);
+        gridStabilityRef.current.isMounted = true;
+      }
+    }, 200);
+
+    // Step 2: Prepare the layout calculations with a delay
+    const prepTimer = setTimeout(() => {
+      if (isMounted && gridStabilityRef.current.isMounted) {
+        // Force a layout refresh to ensure everything is properly calculated
+        window.dispatchEvent(new Event("resize"));
+        gridStabilityRef.current.attemptCount++;
+      }
+    }, 500);
+
+    // Step 3: Mark the dashboard as fully ready only after everything else is stable
+    const readyTimer = setTimeout(() => {
+      if (isMounted && gridStabilityRef.current.isMounted) {
+        setIsDashboardReady(true);
+        gridStabilityRef.current.isFullyReady = true;
+        console.log("Dashboard is now fully ready for interactions");
+      }
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(mountTimer);
+      clearTimeout(prepTimer);
+      clearTimeout(readyTimer);
+
+      // Reset the stability tracking
+      gridStabilityRef.current = {
+        attemptCount: 0,
+        isFullyReady: false,
+        isMounted: false,
+      };
+    };
+  }, [location.pathname]); // Reset readiness when route changes
+
+  // Populate activeCharts from layouts when component mounts or layouts change
+  useEffect(() => {
+    if (layouts) {
+      // Extract unique chart IDs from the current layout
+      const currentBreakpoint = getCurrentBreakpoint();
+      const currentLayout = layouts[currentBreakpoint] || [];
+
+      // Get all chart IDs from the layout
+      const chartIds = currentLayout.map((item) => item.i);
+
+      // Set the active charts
+      console.log("Setting active charts:", chartIds);
+      setActiveCharts(chartIds);
     }
-  };
-
-  // Toggle maximized state for a chart
-  const toggleMaximize = (chartId) => {
-    setMaximizedChart(maximizedChart === chartId ? null : chartId);
-  };
+  }, [layouts, getCurrentBreakpoint]);
 
   // Render chart based on its type
   const renderChart = (chartId, passedData, isMaximized = false) => {
@@ -778,10 +979,10 @@ export default function DraggableDashboard({
             </Avatar>
             <Box>
               <Typography variant="h6" fontWeight={600} noWrap>
-                {t(`charts.${formatChartId(chartId)}.title`)}
+                {t(`charts.${formatChartId(chartId)}.title`, formatChartForDisplay(chartId))}
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap>
-                {t(`charts.${formatChartId(chartId)}.description`)}
+                {t(`charts.${formatChartId(chartId)}.description`, "Chart visualization")}
               </Typography>
             </Box>
           </Box>
@@ -816,82 +1017,152 @@ export default function DraggableDashboard({
   // Helper function to safely format chart ID for translation keys
   const formatChartId = (id) => {
     if (!id) return "";
-    return id.replace(/-/g, "");
+    // Format the chart ID for use in translation keys - ensure it matches the format in en.json
+    // For example, convert "revenue-ebitda" to "revenueEbitda"
+    return id.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
   };
 
-  // Add dynamic CSS for resize handles
+  // Helper function to format chart ID for display as fallback
+  const formatChartForDisplay = (id) => {
+    if (!id) return "";
+    // Convert kebab-case to Title Case
+    return id
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // Add an event listener to ensure proper cursor positioning in the grid
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      // Only apply during drag/resize operations
+      if (isResizing) {
+        // Get all currently dragging or resizing items
+        const activeItems = document.querySelectorAll(
+          ".react-grid-item.react-draggable-dragging, .react-grid-item.resizing"
+        );
+
+        // Apply precise cursor positioning to active items
+        activeItems.forEach((item) => {
+          // Ensure cursor follows item during drag/resize
+          item.style.pointerEvents = "auto";
+          item.style.touchAction = "none";
+
+          // Force hardware acceleration for smooth movement
+          item.style.willChange = "transform";
+
+          // Ensure consistent transform center
+          item.style.transformOrigin = "center center";
+        });
+      }
+    };
+
+    // Add a global event listener for precise cursor tracking
+    document.addEventListener("mousemove", handleMouseMove, { passive: true });
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [isResizing]);
+
+  // Add dynamic CSS for resize handles and fix positioning issues
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
-      /* Base styles for resize handles */
+      /* CRITICAL FIX - Precise cursor positioning */
+      .layout.react-grid-layout {
+        position: relative !important;
+        transform-origin: top left;
+        overflow: visible;
+      }
+
+      /* Fix the z-index and stacking context for better mouse tracking */
+      .react-grid-item {
+        will-change: transform;
+        z-index: 1;
+        box-sizing: border-box;
+        transform-origin: center center;
+      }
+
+      /* Reset transitions during drag for immediate cursor feedback */
+      .react-grid-item.react-draggable-dragging {
+        transition: none !important;
+        z-index: 3;
+        will-change: transform;
+        cursor: grabbing !important;
+        opacity: 0.8;
+        box-shadow: 0 0 10px 3px rgba(25, 118, 210, 0.4) !important;
+        /* Fix for cursor offset issues */
+        user-select: none;
+        pointer-events: auto;
+      }
+
+      /* Force immediate updates during resize operations */
+      .react-grid-item.resizing {
+        transition: none !important;
+        z-index: 3;
+        will-change: transform;
+        user-select: none;
+        pointer-events: auto;
+      }
+
+      /* Improve drag handle styling for better cursor targeting */
+      .drag-handle {
+        cursor: grab;
+        transition: opacity 0.2s;
+        user-select: none;
+        /* Ensure the drag handle always gets pointer events */
+        pointer-events: auto;
+      }
+
+      .react-grid-item.dragging .drag-handle {
+        cursor: grabbing;
+      }
+
+      /* Fix resize handle positioning and styling for better cursor targeting */
       .react-resizable-handle {
         position: absolute;
-        width: 20px;
-        height: 20px;
-        background-repeat: no-repeat;
-        background-origin: content-box;
-        box-sizing: border-box;
-        background-image: url('data:image/svg+xml;utf8,<svg width="10" height="10" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="5" r="4" fill="rgba(0,0,0,0.5)"/></svg>');
-        background-position: bottom right;
-        padding: 0 3px 3px 0;
-        opacity: 0.7;
-        transition: opacity 0.3s, transform 0.2s, background-color 0.3s;
-      }
-
-      /* Hide handles when not in edit mode */
-      .layout:not(.edit-mode) .react-resizable-handle {
-        display: none;
-      }
-
-      /* Only show handles in edit mode */
-      .layout.edit-mode .react-grid-item .react-resizable-handle {
+        width: 24px !important;
+        height: 24px !important;
+        background-color: rgba(25, 118, 210, 0.2);
+        border-radius: 50%;
+        border: 2px solid rgba(25, 118, 210, 0.7);
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 10;
         visibility: visible;
-        opacity: 0.4;
+        opacity: 0;
+        pointer-events: auto;
+        touch-action: none;
       }
 
-      /* Make handles visible when hovering over a grid item */
-      .layout.edit-mode .react-grid-item:hover .react-resizable-handle {
-        opacity: 0.8;
-      }
-
-      /* When actively resizing */
-      .react-grid-item.resizing .react-resizable-handle,
-      .react-grid-item.actively-resizing .react-resizable-handle {
-        background-color: rgba(25, 118, 210, 0.7) !important;
-        transform: scale(1.1);
-        opacity: 1 !important;
-      }
-
-      /* Show a highlight around the card being resized */
-      .react-grid-item.resizing,
-      .react-grid-item.actively-resizing {
-        z-index: 3;
-        box-shadow: 0 0 10px 3px rgba(25, 118, 210, 0.4) !important;
-      }
-
-      /* Handle positions */
+      /* Handle positions adjustments for better cursor accuracy */
       .react-resizable-handle-se {
-        bottom: 0;
-        right: 0;
+        bottom: -8px;
+        right: -8px;
         cursor: se-resize;
       }
 
       .react-resizable-handle-sw {
-        bottom: 0;
-        left: 0;
+        bottom: -8px;
+        left: -8px;
         cursor: sw-resize;
       }
 
       .react-resizable-handle-nw {
-        top: 0;
-        left: 0;
+        top: -8px;
+        left: -8px;
         cursor: nw-resize;
       }
 
       .react-resizable-handle-ne {
-        top: 0;
-        right: 0;
+        top: -8px;
+        right: -8px;
         cursor: ne-resize;
+      }
+
+      /* Make handles more visible on hover for better usability */
+      .react-grid-item:hover .react-resizable-handle {
+        opacity: 0.7;
       }
     `;
     document.head.appendChild(style);
@@ -900,6 +1171,21 @@ export default function DraggableDashboard({
       style.remove();
     };
   }, []);
+
+  // Force window resize event on component mount to ensure charts render correctly
+  useEffect(() => {
+    // Trigger initial resize after a short delay for better chart sizing
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Toggle maximized state for a chart
+  const toggleMaximize = (chartId) => {
+    setMaximizedChart(maximizedChart === chartId ? null : chartId);
+  };
 
   // Memoize the grid children to improve performance, as recommended in react-grid-layout docs
   const gridChildren = React.useMemo(() => {
@@ -915,48 +1201,65 @@ export default function DraggableDashboard({
           overflow: "hidden",
           position: "relative",
           transition: isResizing ? "none" : "box-shadow 0.2s ease-in-out",
+          cursor: editMode ? "default" : "auto",
+          ...(editMode && {
+            "&:hover": {
+              boxShadow: (theme) => `0 0 5px 1px ${theme.palette.primary.light}`,
+            },
+          }),
         }}
         data-grid-id={chartId}
       >
         {/* Chart Title Bar */}
         <CardHeader
+          className="drag-handle"
+          avatar={
+            <Avatar
+              variant="rounded"
+              sx={{
+                bgcolor: (theme) => theme.palette.primary.main,
+                color: "#fff",
+                ...(editMode && { cursor: "grab" }),
+              }}
+            >
+              {CHART_ICONS[chartId] || <InsertChartOutlined />}
+            </Avatar>
+          }
           title={
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Avatar
-                sx={{
-                  mr: 1.5,
-                  color: theme.palette.primary.main,
-                  bgcolor: alpha(theme.palette.primary.light, 0.2),
-                  width: 32,
-                  height: 32,
-                }}
-                variant="rounded"
-              >
-                {CHART_ICONS[chartId]}
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={600} noWrap>
-                  {t(`charts.${formatChartId(chartId)}.title`)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {t(`charts.${formatChartId(chartId)}.description`)}
-                </Typography>
-              </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                ...(editMode && { cursor: "grab" }),
+              }}
+            >
+              {editMode && (
+                <Tooltip title={t("dashboard.drag")}>
+                  <DragIndicator
+                    sx={{
+                      mr: 1,
+                      color: theme.palette.text.secondary,
+                      cursor: "grab",
+                    }}
+                  />
+                </Tooltip>
+              )}
+              <Typography variant="subtitle1" component="div">
+                {t(`charts.${formatChartId(chartId)}.title`, formatChartForDisplay(chartId))}
+              </Typography>
             </Box>
+          }
+          subheader={
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={editMode ? { cursor: "grab" } : {}}
+            >
+              {t(`charts.${formatChartId(chartId)}.description`, "Chart visualization")}
+            </Typography>
           }
           action={
             <Box sx={{ display: "flex" }}>
-              {editMode && (
-                <Tooltip title={t("dashboard.drag")}>
-                  <IconButton
-                    size="small"
-                    sx={{ color: theme.palette.text.secondary, opacity: 0.7 }}
-                  >
-                    <DragIndicator fontSize="small" className="drag-handle" />
-                  </IconButton>
-                </Tooltip>
-              )}
-
               {editMode && (
                 <Tooltip title={t("dashboard.changeSize")}>
                   <IconButton
@@ -1024,6 +1327,7 @@ export default function DraggableDashboard({
     theme,
     t,
     formatChartId,
+    formatChartForDisplay,
     financialData,
     projectData,
     countryData,
@@ -1035,16 +1339,93 @@ export default function DraggableDashboard({
     isResizing,
   ]);
 
+  // Handle layout changes
+  const handleLayoutChange = (currentLayout, allLayouts) => {
+    // Skip if layouts are not valid or if we're currently resizing
+    if (!allLayouts || Object.keys(allLayouts).length === 0 || isResizing) {
+      return;
+    }
+
+    // Don't perform unnecessary updates if layouts haven't changed
+    const hasChanged = JSON.stringify(layouts) !== JSON.stringify(allLayouts);
+    if (!hasChanged) {
+      return;
+    }
+
+    /* eslint-disable-next-line no-console */
+    console.log("Layout changed, updating state:", allLayouts);
+
+    // Validate each item to ensure it meets constraints (prevents minW warnings)
+    const validatedLayouts = { ...allLayouts };
+    Object.keys(validatedLayouts).forEach((breakpoint) => {
+      if (validatedLayouts[breakpoint]) {
+        validatedLayouts[breakpoint] = validatedLayouts[breakpoint].map((item) => {
+          // Ensure minW is never greater than w
+          return {
+            ...item,
+            minW: Math.min(item.minW || 1, item.w),
+          };
+        });
+      }
+    });
+
+    // Create a deep copy to ensure we're not mutating references
+    const layoutsCopy = JSON.parse(JSON.stringify(validatedLayouts));
+
+    // Update internal state
+    setLayouts(layoutsCopy);
+
+    // Notify parent component if callback exists
+    if (onLayoutChange) {
+      onLayoutChange(layoutsCopy);
+    }
+  };
+
+  // Inside the component render section, update the resizeHandle prop:
+  const resizeHandleComponent = useCallback(
+    (resizeHandleAxis) => <CustomResizeHandle handleAxis={resizeHandleAxis} />,
+    []
+  );
+
   return (
-    <Box sx={customStyles.dashboardContainer} ref={containerRef}>
+    <Box sx={{ height: "100%", position: "relative" }} ref={containerRef}>
       {maximizedChart ? (
         <MaximizedChart
           chartId={maximizedChart}
           data={{ financialData, projectData, countryData }}
           onClose={() => toggleMaximize(null)}
         />
-      ) : (
+      ) : mounted ? (
         <>
+          {/* Dashboard Controls */}
+          {editMode && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                zIndex: 10,
+                p: 1,
+                display: "flex",
+                gap: 1,
+              }}
+            >
+              <Tooltip title={t("dashboard.saveLayout")}>
+                <IconButton
+                  color="primary"
+                  onClick={() => {
+                    if (onLayoutChange && layouts) {
+                      onLayoutChange(layouts);
+                    }
+                  }}
+                >
+                  <SaveIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+
+          {/* Edit Mode Indicator */}
           {editMode && (
             <Box
               sx={{
@@ -1067,59 +1448,66 @@ export default function DraggableDashboard({
             </Box>
           )}
 
-          {/* Render a hidden div that updates when mounted to force layout recalculation */}
-          <Box sx={{ display: "none" }}>{mounted ? "mounted" : "not-mounted"}</Box>
-
           <ResponsiveGridLayoutWithWidth
             className={`layout ${editMode ? "edit-mode" : ""}`}
             layouts={layouts}
             onLayoutChange={handleLayoutChange}
             onResize={onResize}
             onResizeStop={onResizeStop}
+            onDrag={onDrag}
+            onDragStop={onDragStop}
+            onDragStart={onDragStart}
             breakpoints={BREAKPOINTS}
             cols={COLS}
             rowHeight={90}
             draggableHandle=".drag-handle"
-            resizeHandle={editMode ? undefined : null}
-            isDraggable={editMode}
-            isResizable={editMode}
-            margin={[12, 12]}
-            containerPadding={[12, 12]}
+            resizeHandle={editMode ? resizeHandleComponent : null}
+            resizeHandles={["se", "sw", "ne", "nw"]} // Enable all corner handles for more flexibility
+            isDraggable={editMode && isDashboardReady}
+            isResizable={editMode && isDashboardReady}
+            // Smaller margins for better positioning accuracy
+            margin={[8, 8]}
+            containerPadding={[8, 8]}
+            // Disable measurement before mount to avoid positioning issues
             measureBeforeMount={false}
-            useCSSTransforms={mounted}
-            compactType="vertical"
-            preventCollision={false}
-            isBounded={true}
-            allowOverlap={false}
-            // Add optimization for resize performance
+            // Always use CSS transforms for better performance and positioning
+            useCSSTransforms={isDashboardReady}
+            // Disable compaction to prevent layout shifts during drag
+            compactType={null}
+            // Disable collision prevention for better manual positioning
+            preventCollision={true}
+            // Disable bounding to prevent restrictive positioning
+            isBounded={false}
+            // Very important for proper cursor tracking during drag/resize
             transformScale={1}
-            // Use a memoized key that includes isResizing to prevent unnecessary rerenders
-            key={`grid-${mounted ? "mounted" : "unmounting"}-${isResizing ? "resizing" : "idle"}-${
-              Object.keys(layouts).length
-            }`}
-            // Validate width constraints during resize to prevent errors
-            onResizeStart={(layout, oldItem, newItem, placeholder, e, element) => {
-              // Set minConstraints dynamically to avoid constraint warnings
-              const currentBreakpoint = getCurrentBreakpoint();
-              if (layouts[currentBreakpoint]) {
-                const item = layouts[currentBreakpoint].find((i) => i.i === oldItem.i);
-                if (item) {
-                  // Ensure minW is never larger than w
-                  item.minW = Math.min(item.minW || 1, item.w);
-
-                  // Add resize indicator class for visual feedback
-                  const el = document.querySelector(`[data-grid-id="${oldItem.i}"]`);
-                  if (el) {
-                    el.classList.add("actively-resizing");
-                  }
-                }
-              }
-              setIsResizing(true);
+            // React-Draggable configurations for better cursor tracking
+            draggableOpts={{
+              // Cancel drag on specific elements to improve usability
+              cancel: ".MuiCardContent-root,.MuiIconButton-root",
+              // Improve grid movement smoothness
+              grid: [1, 1],
+              // Important for exact cursor positioning
+              offsetParent: document.body,
+              // Ensure the scale is set to 1 for accurate positioning
+              scale: 1,
+              // Add additional safety to prevent drags on unmounted elements
+              enableUserSelectHack: isDashboardReady,
             }}
+            // Use a stable key to prevent unnecessary re-initialization
+            key={`dashboard-grid-${location.pathname}-${isDashboardReady ? "ready" : "loading"}`}
+            // Pass resize start handler
+            onResizeStart={onResizeStart}
           >
             {gridChildren}
           </ResponsiveGridLayoutWithWidth>
         </>
+      ) : (
+        // Loading state while the grid is mounting
+        <Box
+          sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}
+        >
+          <CircularProgress />
+        </Box>
       )}
 
       {/* Chart Options Menu */}

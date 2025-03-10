@@ -134,7 +134,8 @@ export const CorrelationMatrix = ({ data }) => {
 
 				// Validate required data and dimensions
 				if (!dimensions.width || !dimensions.height || !svgRef.current) {
-					console.warn("Missing dimensions or SVG ref for correlation matrix");
+					/* eslint-disable-next-line no-console */
+console.warn("Missing dimensions or SVG ref for correlation matrix");
 					setLoading(false);
 					return;
 				}
@@ -145,7 +146,8 @@ export const CorrelationMatrix = ({ data }) => {
 				// Get current metrics based on selected group
 				const metrics = metricGroups[metricGroup] || metricGroups.financial;
 				if (!metrics || metrics.length === 0) {
-					console.warn("No metrics available for correlation matrix");
+					/* eslint-disable-next-line no-console */
+console.warn("No metrics available for correlation matrix");
 					setLoading(false);
 					return;
 				}
@@ -273,7 +275,8 @@ export const CorrelationMatrix = ({ data }) => {
 
 				setLoading(false);
 			} catch (error) {
-				console.error("Error rendering correlation matrix:", error);
+				/* eslint-disable-next-line no-console */
+console.error("Error rendering correlation matrix:", error);
 				setLoading(false);
 			}
 		};

@@ -71,7 +71,8 @@ function FilterMenu({ onClose, open, onFilter, filterParams = {}, onReset }) {
 
   const handleApplyFilters = () => {
     // In a real app, you would apply these filters to your data
-    console.log("Applying filters:", { projectTypes, countries, capacityRange });
+    /* eslint-disable-next-line no-console */
+console.log("Applying filters:", { projectTypes, countries, capacityRange });
 
     // Create filter params object
     const activeFilters = {};

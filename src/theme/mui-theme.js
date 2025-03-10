@@ -377,7 +377,7 @@ export const createMuiTheme = (isDark, customColors) => {
 
 // Hook to use MUI theme with our application theme
 export const useMuiTheme = () => {
-  const { theme, isDark, currentTheme } = useTheme();
+  const { /* eslint-disable-next-line no-unused-vars */ theme, isDark, currentTheme } = useTheme();
 
   // Default colors as fallback
   const defaultColors = {

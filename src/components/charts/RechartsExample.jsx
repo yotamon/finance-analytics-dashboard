@@ -254,7 +254,8 @@ export function RechartsExample({ data }) {
 						}}
 						iconType="circle"
 						iconSize={10}
-						onClick={data => console.log("Legend clicked:", data)}
+						onClick={data => /* eslint-disable-next-line no-console */
+console.log("Legend clicked:", data)}
 					/>
 
 					{/* Reference line for average EBITDA */}

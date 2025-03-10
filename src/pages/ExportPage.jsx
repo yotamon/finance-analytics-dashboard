@@ -81,7 +81,8 @@ function ExportPage() {
 					throw new Error(`Unknown export type: ${type}`);
 			}
 		} catch (error) {
-			console.error(`Export error (${type}):`, error);
+			/* eslint-disable-next-line no-console */
+console.error(`Export error (${type}):`, error);
 			setExportError(error.message || `Failed to export as ${type}`);
 		} finally {
 			setIsExporting(false);
@@ -247,7 +248,8 @@ function ExportPage() {
 				}
 			}
 		} catch (error) {
-			console.error("Error exporting images:", error);
+			/* eslint-disable-next-line no-console */
+console.error("Error exporting images:", error);
 			alert("There was a problem exporting the charts as images. Please try again or check the console for details.");
 		}
 	};

@@ -22,7 +22,8 @@ const getMergedConfig = () => {
 			return deepMerge(config, userSettings);
 		}
 	} catch (error) {
-		console.error("Failed to load user settings:", error);
+		/* eslint-disable-next-line no-console */
+console.error("Failed to load user settings:", error);
 	}
 
 	return config;

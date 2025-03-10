@@ -45,7 +45,7 @@ function KpiCard({ title, value, renderValue, change, trend, isLoading, icon: Ic
 					background: cardGradient,
 					borderTopLeftRadius: "inherit",
 					borderBottomLeftRadius: "inherit"
-			  }
+			}
 			: {}
 	};
 

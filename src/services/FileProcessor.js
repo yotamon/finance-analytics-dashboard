@@ -19,10 +19,10 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process an uploaded file (CSV or Excel)
-	 * @param {File} file - The uploaded file object
-	 * @returns {Promise} - Resolves with processed data or rejects with error
-	 */
+	* Process an uploaded file (CSV or Excel)
+	* @param {File} file - The uploaded file object
+	* @returns {Promise} - Resolves with processed data or rejects with error
+	*/
 	async processFile(file) {
 		return new Promise((resolve, reject) => {
 			const fileExtension = file.name.split(".").pop().toLowerCase();
@@ -41,9 +41,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process CSV file
-	 * @private
-	 */
+	* Process CSV file
+	* @private
+	*/
 	processCsvFile(file, resolve, reject) {
 		Papa.parse(file, {
 			header: true,
@@ -65,9 +65,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process Excel file
-	 * @private
-	 */
+	* Process Excel file
+	* @private
+	*/
 	processExcelFile(file, resolve, reject) {
 		const reader = new FileReader();
 
@@ -97,9 +97,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process the raw data into visualization-ready formats
-	 * @private
-	 */
+	* Process the raw data into visualization-ready formats
+	* @private
+	*/
 	processData() {
 		// Detect the data structure type
 		this.detectDataStructure();
@@ -120,9 +120,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Attempt to detect the structure of the uploaded data
-	 * @private
-	 */
+	* Attempt to detect the structure of the uploaded data
+	* @private
+	*/
 	detectDataStructure() {
 		if (!this.data || this.data.length === 0) {
 			this.dataStructure = "unknown";
@@ -152,9 +152,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process project-centric data
-	 * @private
-	 */
+	* Process project-centric data
+	* @private
+	*/
 	processProjectsData() {
 		// Map the raw data to normalized project structure
 		this.processedData.projects = this.data.map(row => this.normalizeProjectData(row));
@@ -189,9 +189,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process financial projection data
-	 * @private
-	 */
+	* Process financial projection data
+	* @private
+	*/
 	processFinancialsData() {
 		// Assuming the data is year-by-year financial projections
 		this.processedData.financialProjections = {
@@ -235,9 +235,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Process mixed data (contains both project and financial data)
-	 * @private
-	 */
+	* Process mixed data (contains both project and financial data)
+	* @private
+	*/
 	processMixedData() {
 		// Split the data into project data and financial data
 		const projectData = [];
@@ -267,9 +267,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Create financial projections from project data
-	 * @private
-	 */
+	* Create financial projections from project data
+	* @private
+	*/
 	createFinancialProjectionsFromProjects() {
 		const projects = this.processedData.projects;
 
@@ -277,8 +277,8 @@ export default class FileProcessor {
 
 		// Calculate total revenue, ebitda, etc.
 		const totalRevenue = _.sumBy(projects, "revenue");
-		const totalEbitda = _.sumBy(projects, "ebitda");
-		const totalProfit = _.sumBy(projects, "profit");
+		const /* eslint-disable-next-line no-unused-vars */ totalEbitda = _.sumBy(projects, "ebitda");
+		const /* eslint-disable-next-line no-unused-vars */ totalProfit = _.sumBy(projects, "profit");
 
 		// Create simple yearly projections from 2024 to 2030
 		const years = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
@@ -298,9 +298,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Create dummy project data from financial projections
-	 * @private
-	 */
+	* Create dummy project data from financial projections
+	* @private
+	*/
 	createDummyProjectsFromFinancials() {
 		const financials = this.processedData.financialProjections;
 
@@ -394,9 +394,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Normalize project data to a standard format
-	 * @private
-	 */
+	* Normalize project data to a standard format
+	* @private
+	*/
 	normalizeProjectData(row) {
 		// Map common field variations to standard names
 		return {
@@ -419,9 +419,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Find a field in a row by term variations
-	 * @private
-	 */
+	* Find a field in a row by term variations
+	* @private
+	*/
 	findFieldByTerm(row, terms) {
 		const keys = Object.keys(row);
 		for (const term of terms) {
@@ -432,9 +432,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Extract a numeric value from a row by checking multiple possible field names
-	 * @private
-	 */
+	* Extract a numeric value from a row by checking multiple possible field names
+	* @private
+	*/
 	extractNumericValue(row, possibilities) {
 		for (const field of possibilities) {
 			const foundKey = Object.keys(row).find(key => key.toLowerCase().includes(field.toLowerCase()));
@@ -447,9 +447,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Get default location coordinates for a country
-	 * @private
-	 */
+	* Get default location coordinates for a country
+	* @private
+	*/
 	getDefaultLocation(country) {
 		const countryCoordinates = {
 			Romania: [26.1025, 44.4268],
@@ -463,9 +463,9 @@ export default class FileProcessor {
 	}
 
 	/**
-	 * Calculate additional metrics and KPIs from the processed data
-	 * @private
-	 */
+	* Calculate additional metrics and KPIs from the processed data
+	* @private
+	*/
 	calculateAdditionalMetrics() {
 		const projects = this.processedData.projects;
 

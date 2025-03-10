@@ -230,7 +230,8 @@ export function DataProvider({ children }) {
 					setLoadingProgress(100);
 					setLoadingState(DataLoadingState.SUCCESS);
 				} catch (processingError) {
-					console.error("Data processing error:", processingError);
+					/* eslint-disable-next-line no-console */
+console.error("Data processing error:", processingError);
 					setError(processingError.message || "An error occurred during data processing");
 					setLoadingState(DataLoadingState.ERROR);
 				}
@@ -238,7 +239,8 @@ export function DataProvider({ children }) {
 		} catch (err) {
 			setError(err.message || "An error occurred while loading data");
 			setLoadingState(DataLoadingState.ERROR);
-			console.error(err);
+			/* eslint-disable-next-line no-console */
+console.error(err);
 		}
 	}, []);
 

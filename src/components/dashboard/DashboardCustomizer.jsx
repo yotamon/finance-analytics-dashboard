@@ -88,7 +88,8 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 			try {
 				setCharts(JSON.parse(savedCharts));
 			} catch (e) {
-				console.error("Error loading saved chart configuration", e);
+				/* eslint-disable-next-line no-console */
+console.error("Error loading saved chart configuration", e);
 				setCharts(getDefaultCharts());
 			}
 		} else {
@@ -101,7 +102,8 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 			try {
 				setSavedLayouts(JSON.parse(saved));
 			} catch (e) {
-				console.error("Error loading saved layouts", e);
+				/* eslint-disable-next-line no-console */
+console.error("Error loading saved layouts", e);
 			}
 		}
 	}, []);

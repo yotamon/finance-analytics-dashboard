@@ -114,7 +114,8 @@ function ProjectTableCard({ projects = [], pagination, onHide, onResizeCard, fil
 
 			handleMenuClose();
 		} catch (error) {
-			console.error("Error exporting data:", error);
+			/* eslint-disable-next-line no-console */
+console.error("Error exporting data:", error);
 		}
 	};
 

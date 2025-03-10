@@ -98,7 +98,8 @@ export function CurrencyProvider({ children }) {
 			setExchangeRates(simulatedRates);
 			setLastUpdated(new Date());
 		} catch (error) {
-			console.error("Error fetching exchange rates:", error);
+			/* eslint-disable-next-line no-console */
+console.error("Error fetching exchange rates:", error);
 		} finally {
 			setIsLoading(false);
 		}

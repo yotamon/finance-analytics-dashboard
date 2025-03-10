@@ -39,7 +39,7 @@ export default function CurrencySwitcher({ className = "" }) {
 				hour: "numeric",
 				minute: "numeric",
 				hour12: true
-		  })
+		})
 		: "";
 
 	return (

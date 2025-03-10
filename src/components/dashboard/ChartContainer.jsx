@@ -92,7 +92,8 @@ function ChartContainer({
       link.download = `${title.toLowerCase().replace(/\s+/g, "-")}-chart.png`;
       link.click();
     } catch (error) {
-      console.error("Error exporting chart as image:", error);
+      /* eslint-disable-next-line no-console */
+console.error("Error exporting chart as image:", error);
       alert("Failed to download image. Please try again.");
     }
   };

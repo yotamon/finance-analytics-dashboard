@@ -280,7 +280,8 @@ export default function DataValidation({ data, onValidated, isVisible }) {
 					onValidated(true, results);
 				}
 			} catch (error) {
-				console.error("Validation error:", error);
+				/* eslint-disable-next-line no-console */
+console.error("Validation error:", error);
 				setValidationResults({
 					errors: [
 						{

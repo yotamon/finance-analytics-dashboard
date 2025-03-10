@@ -45,7 +45,8 @@ function MaterialUIWrapper({ children }) {
 
 		// Make sure we have a valid theme before rendering
 		if (!muiTheme) {
-			console.error("Failed to create Material UI theme. Using default theme.");
+			/* eslint-disable-next-line no-console */
+console.error("Failed to create Material UI theme. Using default theme.");
 			return children;
 		}
 
@@ -56,7 +57,8 @@ function MaterialUIWrapper({ children }) {
 			</MuiThemeProvider>
 		);
 	} catch (error) {
-		console.error("Error in MaterialUIWrapper:", error);
+		/* eslint-disable-next-line no-console */
+console.error("Error in MaterialUIWrapper:", error);
 		// Fallback to rendering without MUI theme in case of error
 		return children;
 	}
