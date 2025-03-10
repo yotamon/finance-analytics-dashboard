@@ -43,7 +43,7 @@ function AppContent() {
 					sx={{
 						position: "absolute",
 						inset: 0,
-						background: isDark ? "linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.6))" : "linear-gradient(to bottom, rgba(238, 242, 255, 0.8), rgba(249, 250, 251, 0.8))",
+						background: isDark ? "linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.6))" : "linear-gradient(to bottom, rgba(238, 242, 255, 0.3), rgba(249, 250, 251, 0.2))",
 						pointerEvents: "none",
 						zIndex: 0
 					}}

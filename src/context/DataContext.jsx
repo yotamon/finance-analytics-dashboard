@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 
 // Default mock data - defined outside the component to ensure it's always available
 const MOCK_DATA = {
@@ -120,6 +120,15 @@ const MOCK_DATA = {
 	}
 };
 
+// Dataloader states
+const DataLoadingState = {
+	IDLE: "idle",
+	LOADING: "loading",
+	PROCESSING: "processing",
+	SUCCESS: "success",
+	ERROR: "error"
+};
+
 // Create the context with a default empty value
 const DataContext = createContext(null);
 
@@ -132,26 +141,104 @@ export const useData = () => {
 	return context;
 };
 
+/**
+ * Worker function to pre-process the data in a non-blocking way
+ * @param {Object} rawData - The raw data to process
+ * @returns {Object} - Processed data
+ */
+const processDataWorker = rawData => {
+	// Create derived data, calculated fields, etc.
+	// This would be more complex in a real application
+	return {
+		...rawData,
+		// Add derived fields if needed
+		derivedFields: {
+			processedAt: new Date().toISOString()
+		}
+	};
+};
+
 // Provider component that wraps the app
 export function DataProvider({ children }) {
 	// Initialize state with mock data directly to avoid any loading inconsistencies
 	const [data, setData] = useState(MOCK_DATA);
-	const [isLoading, setIsLoading] = useState(false);
+	const [loadingState, setLoadingState] = useState(DataLoadingState.IDLE);
+	const [loadingProgress, setLoadingProgress] = useState(0);
 	const [error, setError] = useState(null);
+	const [processingStartTime, setProcessingStartTime] = useState(null);
 
-	// Process data function
+	// Derive isLoading from loadingState for backward compatibility
+	const isLoading = loadingState === DataLoadingState.LOADING || loadingState === DataLoadingState.PROCESSING;
+
+	// Simulates progress updates during data processing
+	useEffect(() => {
+		let progressInterval;
+
+		if (loadingState === DataLoadingState.PROCESSING && processingStartTime) {
+			// Update progress in small increments
+			progressInterval = setInterval(() => {
+				const elapsedTime = Date.now() - processingStartTime;
+				// Simulate progress over 2 seconds max
+				const maxProcessingTime = 2000;
+				const calculatedProgress = Math.min(90 + (elapsedTime / maxProcessingTime) * 10, 99);
+
+				setLoadingProgress(calculatedProgress);
+
+				// If we've reached the end of the processing time, complete it
+				if (elapsedTime >= maxProcessingTime) {
+					clearInterval(progressInterval);
+				}
+			}, 100);
+		}
+
+		return () => {
+			if (progressInterval) {
+				clearInterval(progressInterval);
+			}
+		};
+	}, [loadingState, processingStartTime]);
+
+	// Process data function with progress tracking
 	const processData = useCallback(async newData => {
-		setIsLoading(true);
+		// Start loading
+		setLoadingState(DataLoadingState.LOADING);
+		setLoadingProgress(10);
 		setError(null);
 
 		try {
-			// You can add data processing logic here if needed
-			setData(newData);
+			// Simulate initial data loading (e.g., file parsing)
+			await new Promise(resolve => setTimeout(resolve, 300));
+			setLoadingProgress(40);
+
+			// Wait a bit more to simulate network or heavy computation
+			await new Promise(resolve => setTimeout(resolve, 200));
+			setLoadingProgress(70);
+
+			// Start data processing phase
+			setLoadingState(DataLoadingState.PROCESSING);
+			setProcessingStartTime(Date.now());
+			setLoadingProgress(90);
+
+			// Use setTimeout to avoid blocking the main thread
+			setTimeout(() => {
+				try {
+					// Process the data
+					const processedData = processDataWorker(newData);
+
+					// Update state with processed data
+					setData(processedData);
+					setLoadingProgress(100);
+					setLoadingState(DataLoadingState.SUCCESS);
+				} catch (processingError) {
+					console.error("Data processing error:", processingError);
+					setError(processingError.message || "An error occurred during data processing");
+					setLoadingState(DataLoadingState.ERROR);
+				}
+			}, 200);
 		} catch (err) {
-			setError(err.message || "An error occurred while processing data");
+			setError(err.message || "An error occurred while loading data");
+			setLoadingState(DataLoadingState.ERROR);
 			console.error(err);
-		} finally {
-			setIsLoading(false);
 		}
 	}, []);
 
@@ -160,22 +247,30 @@ export function DataProvider({ children }) {
 		// Instead of setting to null, reset to initial mock data
 		setData(MOCK_DATA);
 		setError(null);
+		setLoadingState(DataLoadingState.IDLE);
+		setLoadingProgress(0);
 	}, []);
 
 	// Always true for demo purposes
 	const hasData = true;
 
-	// Context value
-	const contextValue = {
-		data,
-		setData: processData,
-		clearData,
-		isLoading,
-		error,
-		hasData
-	};
+	// Memoize the context value to prevent unnecessary re-renders
+	const contextValue = useMemo(
+		() => ({
+			data,
+			setData: processData,
+			clearData,
+			isLoading,
+			loadingState,
+			loadingProgress,
+			error,
+			hasData
+		}),
+		[data, processData, clearData, isLoading, loadingState, loadingProgress, error, hasData]
+	);
 
 	return <DataContext.Provider value={contextValue}>{children}</DataContext.Provider>;
 }
 
-// No need to export useData again, it's already exported above
+// Export the loading state constants
+export { DataLoadingState };

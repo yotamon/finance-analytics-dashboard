@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Download, Filter, Info, ChevronDown, BarChart2, PieChart, MapPin, TrendingUp, LayoutDashboard, RefreshCw } from "lucide-react";
 import { useData } from "../context/DataContext";
 import Container from "../components/layout/Container";
@@ -6,6 +6,7 @@ import KpiContainer from "../components/dashboard/KpiContainer";
 import ChartContainer from "../components/dashboard/ChartContainer";
 import ExportMenu from "../components/dashboard/ExportMenu";
 import FilterMenu from "../components/dashboard/FilterMenu";
+import ProjectTableCard from "../components/dashboard/ProjectTableCard";
 import { RevenueEbitdaChart } from "../components/charts/RevenueEbitdaChart";
 import { ProjectPortfolioChart } from "../components/charts/ProjectPortfolioChart";
 import { ProjectTypeChart } from "../components/charts/ProjectTypeChart";
@@ -15,9 +16,12 @@ import { CountryComparisonChart } from "../components/charts/CountryComparisonCh
 import { GeographicMap } from "../components/charts/GeographicMap";
 import { useI18n } from "../context/I18nContext";
 import { useTheme } from "../context/ThemeContext";
+import useVirtualData from "../hooks/useVirtualData";
+import { DataLoadingState } from "../context/DataContext";
+import LoadingProgressBar from "../components/ui/LoadingProgressBar";
 
 // Material UI imports
-import { Box, Button, Typography, Grid, Paper, IconButton, Chip, useTheme as useMuiTheme, alpha } from "@mui/material";
+import { Box, Button, Typography, Grid, Paper, IconButton, Chip, useTheme as useMuiTheme, alpha, TablePagination, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
@@ -132,7 +136,7 @@ const defaultCountryTotals = [
 ];
 
 function Dashboard() {
-	const { data, isLoading } = useData();
+	const { data, isLoading, loadingState, loadingProgress } = useData();
 	const [showExportMenu, setShowExportMenu] = useState(false);
 	const [showFilterMenu, setShowFilterMenu] = useState(false);
 	const { t } = useI18n();
@@ -147,7 +151,8 @@ function Dashboard() {
 		geographicDistribution: true,
 		investmentReturns: true,
 		ebitdaMargin: true,
-		countryComparison: true
+		countryComparison: true,
+		projectPortfolio: true
 	});
 
 	// Add state to track card sizes
@@ -159,6 +164,41 @@ function Dashboard() {
 		investmentReturns: "1/3", // Default is 1/3 width for this chart
 		ebitdaMargin: "1/3", // Default is 1/3 width for this chart
 		countryComparison: "1/3" // Default is 1/3 width for this chart
+	});
+
+	// Use our virtual data hook for project data
+	const {
+		data: paginatedProjects,
+		totalCount: totalProjects,
+		page,
+		rowsPerPage,
+		handleChangePage,
+		handleChangeRowsPerPage,
+		handleFilter,
+		filterParams,
+		resetFilters
+	} = useVirtualData(data?.projects || [], {
+		pageSize: 10,
+		filterFunction: (item, filters) => {
+			// Skip filtering if no filters applied
+			if (Object.keys(filters).length === 0) return true;
+
+			// Check type filter
+			if (filters.type && item.type !== filters.type) return false;
+
+			// Check country filter
+			if (filters.country && item.country !== filters.country) return false;
+
+			// Check status filter
+			if (filters.status && item.status !== filters.status) return false;
+
+			// Check capacity range
+			if (filters.capacityMin && item.capacity < filters.capacityMin) return false;
+			if (filters.capacityMax && item.capacity > filters.capacityMax) return false;
+
+			// All filters passed
+			return true;
+		}
 	});
 
 	// Get actual data or fallback to defaults - ensuring data is always available
@@ -250,15 +290,56 @@ function Dashboard() {
 	const getGridSpan = size => {
 		switch (size) {
 			case "full":
-				return 6;
+				return 12;
 			case "1/2":
-				return 3;
+				return 6;
 			case "1/3":
-				return 2;
+				return 4;
 			default:
-				return 3; // Default size
+				return 6;
 		}
 	};
+
+	// Optimized rendering for the stats section
+	const renderStats = useMemo(() => {
+		return (
+			<Grid container spacing={3} sx={{ mb: 4 }}>
+				<Grid item xs={12}>
+					<KpiContainer />
+				</Grid>
+			</Grid>
+		);
+	}, [data?.kpis]);
+
+	// Add table pagination controls
+	const renderTablePagination = () => (
+		<Box
+			sx={{
+				display: "flex",
+				justifyContent: "flex-end",
+				alignItems: "center",
+				width: "100%"
+			}}>
+			<TablePagination
+				component="div"
+				count={totalProjects}
+				page={page}
+				onPageChange={handleChangePage}
+				rowsPerPage={rowsPerPage}
+				onRowsPerPageChange={handleChangeRowsPerPage}
+				rowsPerPageOptions={[5, 10, 25, 50]}
+				labelRowsPerPage="Rows:"
+				sx={{
+					".MuiTablePagination-selectLabel": {
+						fontWeight: 500
+					},
+					".MuiTablePagination-displayedRows": {
+						fontWeight: 500
+					}
+				}}
+			/>
+		</Box>
+	);
 
 	return (
 		<Box
@@ -286,6 +367,9 @@ function Dashboard() {
 				}
 			}}>
 			<Container sx={{ py: 5 }}>
+				{/* Showing loading progress */}
+				{loadingState !== DataLoadingState.IDLE && <LoadingProgressBar loadingState={loadingState} progress={loadingProgress} />}
+
 				{/* Dashboard Header */}
 				<Box
 					sx={{
@@ -390,194 +474,211 @@ function Dashboard() {
 					</Box>
 				</Box>
 
-				{/* KPI Section */}
-				<Box
-					sx={{
-						mb: 4,
-						animation: "fadeIn 0.8s ease-out",
-						animationDelay: "0.1s"
-					}}>
-					<KpiContainer />
-				</Box>
+				{/* Stats section */}
+				{renderStats}
 
-				{/* Charts Section */}
-				<Box id="dashboard-charts" sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-					{/* Main Charts Grid */}
-					<Grid container spacing={4}>
-						{/* Revenue & EBITDA Chart */}
-						{visibleCharts.revenueEbitda && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.revenueEbitda)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.2s"
-								}}>
-								<ChartContainer
-									title={t("charts.revenueEbitda.title") || "Revenue & EBITDA Projection"}
-									description={t("charts.revenueEbitda.description") || "Showing exponential growth from 2025-2026 as projects come online"}
-									icon={BarChart2}
-									onHide={() => handleHideChart("revenueEbitda")}
-									onResizeCard={size => handleResizeCard("revenueEbitda", size)}>
-									<Box sx={{ width: "100%", height: 300 }}>
-										<RevenueEbitdaChart data={financialData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
-
-						{/* Project Portfolio Chart */}
-						{visibleCharts.portfolioOverview && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.portfolioOverview)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.3s"
-								}}>
-								<ChartContainer
-									title={t("charts.portfolioOverview.title") || "Project Portfolio Overview"}
-									description={t("charts.portfolioOverview.description") || "Investment size vs. capacity vs. expected returns"}
-									icon={TrendingUp}
-									onHide={() => handleHideChart("portfolioOverview")}
-									onResizeCard={size => handleResizeCard("portfolioOverview", size)}>
-									<Box sx={{ width: "100%", height: 300 }}>
-										<ProjectPortfolioChart data={projectData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
-
-						{/* Project Type Chart */}
-						{visibleCharts.projectType && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.projectType)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.4s"
-								}}>
-								<ChartContainer
-									title={t("charts.projectType.title") || "Project Type Breakdown"}
-									description={t("charts.projectType.description") || "Distribution between wind and solar capacity"}
-									icon={PieChart}
-									onHide={() => handleHideChart("projectType")}
-									onResizeCard={size => handleResizeCard("projectType", size)}>
-									<Box sx={{ width: "100%", height: 300 }}>
-										<ProjectTypeChart data={projectData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
-
-						{/* Geographic Map */}
-						{visibleCharts.geographicDistribution && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.geographicDistribution)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.5s"
-								}}>
-								<ChartContainer
-									title={t("charts.geographicDistribution.title") || "Geographic Distribution"}
-									description={t("charts.geographicDistribution.description") || "Project locations and regional investments"}
-									icon={MapPin}
-									onHide={() => handleHideChart("geographicDistribution")}
-									onResizeCard={size => handleResizeCard("geographicDistribution", size)}>
-									<Box sx={{ width: "100%", height: 400 }}>
-										<GeographicMap data={projectData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
-
-						{/* Bottom row of smaller charts */}
-						{visibleCharts.investmentReturns && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.investmentReturns)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.6s"
-								}}>
-								<ChartContainer
-									title={t("charts.investmentReturns.title") || "Investment Returns"}
-									description={t("charts.investmentReturns.description") || "IRR vs. yield on cost analysis"}
-									icon={TrendingUp}
-									onHide={() => handleHideChart("investmentReturns")}
-									onResizeCard={size => handleResizeCard("investmentReturns", size)}>
-									<Box sx={{ width: "100%", height: 300 }}>
-										<InvestmentReturnsChart data={projectData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
-
-						{visibleCharts.ebitdaMargin && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.ebitdaMargin)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.7s"
-								}}>
-								<ChartContainer
-									title={t("charts.ebitdaMargin.title") || "EBITDA Margin"}
-									description={t("charts.ebitdaMargin.description") || "Profitability analysis by project type"}
-									icon={BarChart2}
-									onHide={() => handleHideChart("ebitdaMargin")}
-									onResizeCard={size => handleResizeCard("ebitdaMargin", size)}>
-									<Box sx={{ width: "100%", height: 300 }}>
-										<EbitdaMarginChart data={financialData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
-
-						{visibleCharts.countryComparison && (
-							<Grid
-								item
-								xs={12}
-								lg={getGridSpan(cardSizes.countryComparison)}
-								sx={{
-									transform: "translateY(0)",
-									transition: "transform 0.5s ease, opacity 0.5s ease",
-									animation: "fadeIn 0.8s ease-out",
-									animationDelay: "0.8s"
-								}}>
-								<ChartContainer
-									title={t("charts.countryComparison.title") || "Country Comparison"}
-									description={t("charts.countryComparison.description") || "Investment and capacity by country"}
-									icon={BarChart2}
-									onHide={() => handleHideChart("countryComparison")}
-									onResizeCard={size => handleResizeCard("countryComparison", size)}>
-									<Box sx={{ width: "100%", height: 300 }}>
-										<CountryComparisonChart data={countryData} />
-									</Box>
-								</ChartContainer>
-							</Grid>
-						)}
+				{/* Rest of the dashboard layout */}
+				<Grid container spacing={3}>
+					{/* Use the paginated data for the project table */}
+					<Grid item xs={12} sx={{ mb: 3, display: visibleCharts.projectPortfolio ? "block" : "none" }}>
+						<ProjectTableCard
+							projects={paginatedProjects}
+							pagination={renderTablePagination()}
+							onHide={() => {
+								setVisibleCharts({
+									...visibleCharts,
+									projectPortfolio: false
+								});
+							}}
+							onResizeCard={size => {
+								// Optional: Handle resizing if needed
+								console.log("Project portfolio resizing to:", size);
+							}}
+							filterParams={filterParams}
+							handleFilter={handleFilter}
+							resetFilters={resetFilters}
+						/>
 					</Grid>
-				</Box>
+
+					{/* Charts Section */}
+					<Box id="dashboard-charts" sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+						{/* Main Charts Grid */}
+						<Grid container spacing={4}>
+							{/* Revenue & EBITDA Chart */}
+							{visibleCharts.revenueEbitda && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.revenueEbitda)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.2s"
+									}}>
+									<ChartContainer
+										title={t("charts.revenueEbitda.title") || "Revenue & EBITDA Projection"}
+										description={t("charts.revenueEbitda.description") || "Showing exponential growth from 2025-2026 as projects come online"}
+										icon={BarChart2}
+										onHide={() => handleHideChart("revenueEbitda")}
+										onResizeCard={size => handleResizeCard("revenueEbitda", size)}>
+										<Box sx={{ width: "100%", height: 300 }}>
+											<RevenueEbitdaChart data={financialData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+
+							{/* Project Portfolio Chart */}
+							{visibleCharts.portfolioOverview && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.portfolioOverview)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.3s"
+									}}>
+									<ChartContainer
+										title={t("charts.portfolioOverview.title") || "Project Portfolio Overview"}
+										description={t("charts.portfolioOverview.description") || "Investment size vs. capacity vs. expected returns"}
+										icon={TrendingUp}
+										onHide={() => handleHideChart("portfolioOverview")}
+										onResizeCard={size => handleResizeCard("portfolioOverview", size)}>
+										<Box sx={{ width: "100%", height: 300 }}>
+											<ProjectPortfolioChart data={projectData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+
+							{/* Project Type Chart */}
+							{visibleCharts.projectType && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.projectType)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.4s"
+									}}>
+									<ChartContainer
+										title={t("charts.projectType.title") || "Project Type Breakdown"}
+										description={t("charts.projectType.description") || "Distribution between wind and solar capacity"}
+										icon={PieChart}
+										onHide={() => handleHideChart("projectType")}
+										onResizeCard={size => handleResizeCard("projectType", size)}>
+										<Box sx={{ width: "100%", height: 300 }}>
+											<ProjectTypeChart data={projectData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+
+							{/* Geographic Map */}
+							{visibleCharts.geographicDistribution && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.geographicDistribution)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.5s"
+									}}>
+									<ChartContainer
+										title={t("charts.geographicDistribution.title") || "Geographic Distribution"}
+										description={t("charts.geographicDistribution.description") || "Project locations and regional investments"}
+										icon={MapPin}
+										onHide={() => handleHideChart("geographicDistribution")}
+										onResizeCard={size => handleResizeCard("geographicDistribution", size)}>
+										<Box sx={{ width: "100%", height: 400 }}>
+											<GeographicMap data={projectData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+
+							{/* Bottom row of smaller charts */}
+							{visibleCharts.investmentReturns && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.investmentReturns)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.6s"
+									}}>
+									<ChartContainer
+										title={t("charts.investmentReturns.title") || "Investment Returns"}
+										description={t("charts.investmentReturns.description") || "IRR vs. yield on cost analysis"}
+										icon={TrendingUp}
+										onHide={() => handleHideChart("investmentReturns")}
+										onResizeCard={size => handleResizeCard("investmentReturns", size)}>
+										<Box sx={{ width: "100%", height: 300 }}>
+											<InvestmentReturnsChart data={projectData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+
+							{visibleCharts.ebitdaMargin && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.ebitdaMargin)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.7s"
+									}}>
+									<ChartContainer
+										title={t("charts.ebitdaMargin.title") || "EBITDA Margin"}
+										description={t("charts.ebitdaMargin.description") || "Profitability analysis by project type"}
+										icon={BarChart2}
+										onHide={() => handleHideChart("ebitdaMargin")}
+										onResizeCard={size => handleResizeCard("ebitdaMargin", size)}>
+										<Box sx={{ width: "100%", height: 300 }}>
+											<EbitdaMarginChart data={financialData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+
+							{visibleCharts.countryComparison && (
+								<Grid
+									item
+									xs={12}
+									lg={getGridSpan(cardSizes.countryComparison)}
+									sx={{
+										transform: "translateY(0)",
+										transition: "transform 0.5s ease, opacity 0.5s ease",
+										animation: "fadeIn 0.8s ease-out",
+										animationDelay: "0.8s"
+									}}>
+									<ChartContainer
+										title={t("charts.countryComparison.title") || "Country Comparison"}
+										description={t("charts.countryComparison.description") || "Investment and capacity by country"}
+										icon={BarChart2}
+										onHide={() => handleHideChart("countryComparison")}
+										onResizeCard={size => handleResizeCard("countryComparison", size)}>
+										<Box sx={{ width: "100%", height: 300 }}>
+											<CountryComparisonChart data={countryData} />
+										</Box>
+									</ChartContainer>
+								</Grid>
+							)}
+						</Grid>
+					</Box>
+				</Grid>
 			</Container>
 		</Box>
 	);

@@ -20,44 +20,22 @@ function KpiCard({ title, value, renderValue, change, trend, isLoading, icon: Ic
 	// Set default gradient if none provided, using MUI theme colors
 	const cardGradient = getGradientColors(gradient);
 
-	if (isLoading) {
-		return (
-			<Card
-				elevation={2}
-				sx={{
-					height: "100%",
-					p: 3,
-					borderRadius: 3,
-					backgroundColor: alpha(theme.palette.background.paper, 0.8),
-					backdropFilter: "blur(8px)"
-				}}>
-				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
-					<Skeleton variant="text" width={120} height={20} />
-					<Skeleton variant="circular" width={24} height={24} />
-				</Box>
-				<Skeleton variant="text" width={160} height={32} sx={{ mb: 0.5 }} />
-				<Skeleton variant="text" width={80} height={20} />
-			</Card>
-		);
-	}
-
-	return (
-		<Card
-			elevation={2}
-			sx={{
-				height: "100%",
-				p: 3,
-				borderRadius: 3,
-				backgroundColor: alpha(theme.palette.background.paper, 0.8),
-				backdropFilter: "blur(8px)",
-				transition: "box-shadow 0.3s ease, transform 0.3s ease",
-				position: "relative",
-				overflow: "hidden",
-				"&:hover": {
-					boxShadow: theme.shadows[8],
-					transform: "translateY(-4px)"
-				},
-				"&::before": {
+	// Base card styles to avoid duplication
+	const cardStyles = {
+		height: "100%",
+		p: 3,
+		borderRadius: 3,
+		backgroundColor: alpha(theme.palette.background.paper, 0.8),
+		backdropFilter: "blur(8px)",
+		transition: "box-shadow 0.3s ease, transform 0.3s ease",
+		position: "relative",
+		overflow: "hidden",
+		"&:hover": {
+			boxShadow: theme.shadows[8],
+			transform: "translateY(-4px)"
+		},
+		"&::before": !isLoading
+			? {
 					content: '""',
 					position: "absolute",
 					top: 0,
@@ -67,8 +45,107 @@ function KpiCard({ title, value, renderValue, change, trend, isLoading, icon: Ic
 					background: cardGradient,
 					borderTopLeftRadius: "inherit",
 					borderBottomLeftRadius: "inherit"
-				}
-			}}>
+			  }
+			: {}
+	};
+
+	if (isLoading) {
+		// Enhanced skeleton loading state
+		return (
+			<Card elevation={2} sx={cardStyles}>
+				<Box sx={{ position: "relative", zIndex: 1 }}>
+					<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+						<Box sx={{ display: "flex", alignItems: "center" }}>
+							{/* Icon skeleton */}
+							<Skeleton
+								variant="rounded"
+								width={40}
+								height={40}
+								sx={{
+									mr: 1.5,
+									borderRadius: 1.5,
+									backgroundColor: alpha(theme.palette.primary.main, 0.1)
+								}}
+							/>
+							{/* Title skeleton */}
+							<Skeleton variant="text" width={120} height={20} />
+						</Box>
+						{/* Change percentage skeleton */}
+						<Skeleton
+							variant="rounded"
+							width={60}
+							height={24}
+							sx={{
+								borderRadius: 1.5,
+								backgroundColor: alpha(theme.palette.success.main, 0.1)
+							}}
+						/>
+					</Box>
+
+					{/* Value skeleton - pulsing animation */}
+					<Skeleton
+						variant="text"
+						width={160}
+						height={40}
+						sx={{
+							mb: 0.5,
+							mt: 2.5,
+							animation: `${theme.transitions.create(["opacity"], {
+								duration: theme.transitions.duration.complex,
+								easing: theme.transitions.easing.easeInOut
+							})} 1.5s infinite`
+						}}
+					/>
+
+					{/* Accent line skeleton */}
+					<Skeleton
+						variant="rectangular"
+						width={64}
+						height={4}
+						sx={{
+							mt: 1,
+							borderRadius: 1,
+							backgroundColor: alpha(theme.palette.primary.main, 0.2)
+						}}
+					/>
+
+					{/* Tooltip text skeleton */}
+					<Box sx={{ mt: 1.5, display: "flex", alignItems: "center" }}>
+						<Skeleton variant="circular" width={14} height={14} sx={{ mr: 0.5 }} />
+						<Skeleton variant="text" width={140} height={16} />
+					</Box>
+
+					{/* Subtle loading indicator */}
+					<Box
+						sx={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							height: "2px",
+							background: `linear-gradient(90deg,
+								${alpha(theme.palette.primary.main, 0)},
+								${alpha(theme.palette.primary.main, 0.6)},
+								${alpha(theme.palette.primary.main, 0)})`,
+							backgroundSize: "200% 100%",
+							animation: "shimmer 2s infinite",
+							"@keyframes shimmer": {
+								"0%": {
+									backgroundPosition: "100% 0"
+								},
+								"100%": {
+									backgroundPosition: "-100% 0"
+								}
+							}
+						}}
+					/>
+				</Box>
+			</Card>
+		);
+	}
+
+	return (
+		<Card elevation={2} sx={cardStyles}>
 			<CardContent sx={{ p: 0, position: "relative", zIndex: 1 }}>
 				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
 					<Box sx={{ display: "flex", alignItems: "center" }}>

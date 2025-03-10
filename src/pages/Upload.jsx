@@ -4,16 +4,14 @@ import { useDropzone } from "react-dropzone";
 import { Upload, FileText, AlertCircle } from "lucide-react";
 import useFileUpload from "../hooks/useFileUpload";
 import Button from "../components/ui/Button";
-import ProgressBar from "../components/ui/ProgressBar";
 import Container from "../components/layout/Container";
-import ConfigDemo from "../components/ConfigDemo";
-import { useConfig } from "../context/ConfigContext";
+import { useData } from "../context/DataContext";
+import LoadingProgressBar from "../components/ui/LoadingProgressBar";
 
 function UploadPage() {
 	const navigate = useNavigate();
 	const { uploadFile, uploadStatus, resetUpload } = useFileUpload();
-	const { isFeatureEnabled } = useConfig();
-	const showConfigDemo = isFeatureEnabled("DataImport"); // Only show config demo if data import is enabled
+	const { loadingState, loadingProgress } = useData();
 
 	const onDrop = useCallback(
 		async acceptedFiles => {
@@ -58,7 +56,7 @@ function UploadPage() {
 					{uploadStatus.isUploading ? (
 						<div className="py-4">
 							<h3 className="text-lg font-medium text-gray-800 mb-3">Processing File...</h3>
-							<ProgressBar progress={uploadStatus.progress} />
+							<LoadingProgressBar loadingState={loadingState} progress={uploadStatus.progress || loadingProgress} message="Uploading and processing file..." autoHide={false} />
 						</div>
 					) : uploadStatus.error ? (
 						<div className="py-4 text-red-500">
@@ -101,13 +99,6 @@ function UploadPage() {
 						</Button>
 					</div>
 				</div>
-
-				{showConfigDemo && (
-					<div className="mt-12">
-						<h2 className="text-xl font-bold mb-6 text-gray-800">Configuration Settings</h2>
-						<ConfigDemo />
-					</div>
-				)}
 			</div>
 		</Container>
 	);

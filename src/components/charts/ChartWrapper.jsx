@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import {
 	LineChart,
 	Line,
@@ -24,12 +24,21 @@ import {
 import { ChartTheme, getChartColors, createGradient, getDashPattern } from "./ChartTheme";
 import { CustomTooltip } from "./CustomTooltip";
 import { Box, CircularProgress, Typography, Paper, useTheme, Alert } from "@mui/material";
+import ChartSkeleton from "../ui/ChartSkeleton";
+import useChartLazyLoading from "../../hooks/useChartLazyLoading";
 
-export function ChartWrapper({ chartType, data, options, width = "100%", height = "100%", chartName = "Chart" }) {
+// Memoized chart wrapper component to prevent unnecessary re-renders
+export const ChartWrapper = memo(function ChartWrapper({ chartType, data, options, width = "100%", height = "100%", chartName = "Chart" }) {
 	const theme = useTheme();
 	const [isChartLoading, setIsChartLoading] = useState(true);
 	const [activeIndex, setActiveIndex] = useState(-1);
 	const [error, setError] = useState(null);
+
+	// Use our custom lazy loading hook
+	const { isVisible, shouldRender, ref } = useChartLazyLoading({
+		threshold: 0.1,
+		delay: 150
+	});
 
 	// Handle chart load state
 	useEffect(() => {
@@ -39,14 +48,17 @@ export function ChartWrapper({ chartType, data, options, width = "100%", height 
 				console.warn("Chart data is empty or invalid");
 			}
 
-			const timer = setTimeout(() => setIsChartLoading(false), 500);
-			return () => clearTimeout(timer);
+			if (isVisible && shouldRender) {
+				// Add a small delay to stagger rendering and improve perceived performance
+				const timer = setTimeout(() => setIsChartLoading(false), 300);
+				return () => clearTimeout(timer);
+			}
 		} catch (err) {
 			console.error("Error initializing chart:", err);
 			setError(err.message || "Failed to initialize chart");
 			setIsChartLoading(false);
 		}
-	}, [data]);
+	}, [data, isVisible, shouldRender]);
 
 	// Handle pie/donut chart hover
 	const handlePieEnter = (_, index) => {
@@ -66,22 +78,40 @@ export function ChartWrapper({ chartType, data, options, width = "100%", height 
 
 	// Setup chart with enhanced styling
 	const renderChart = () => {
+		// If not visible or not yet ready to render, return null (will be replaced by skeleton)
+		if (!isVisible || !shouldRender) {
+			return null;
+		}
+
 		try {
 			// If error occurred, show error message
 			if (error) {
 				return (
-					<div className="flex items-center justify-center h-full">
-						<div className="text-[rgb(var(--color-error-500))]">Chart Error: {error}</div>
-					</div>
+					<Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+						<Alert severity="error" sx={{ width: "90%" }}>
+							Chart Error: {error}
+						</Alert>
+					</Box>
 				);
 			}
 
 			// Validate data
 			if (!data || !Array.isArray(data) || data.length === 0) {
 				return (
-					<div className="flex items-center justify-center h-full">
-						<div className="text-[rgb(var(--color-error-500))]">No data available for chart</div>
-					</div>
+					<Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+						<Alert severity="warning" sx={{ width: "90%" }}>
+							No data available for chart
+						</Alert>
+					</Box>
+				);
+			}
+
+			// If still loading, show progress indicator
+			if (isChartLoading) {
+				return (
+					<Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+						<CircularProgress size={40} thickness={4} />
+					</Box>
 				);
 			}
 
@@ -658,70 +688,38 @@ export function ChartWrapper({ chartType, data, options, width = "100%", height 
 		} catch (err) {
 			console.error("Error rendering chart:", err);
 			return (
-				<div className="flex items-center justify-center h-full">
-					<div className="text-[rgb(var(--color-error-500))]">Error rendering chart: {err.message || "Unknown error"}</div>
-				</div>
+				<Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+					<Alert severity="error" sx={{ width: "90%" }}>
+						Failed to render chart: {err.message}
+					</Alert>
+				</Box>
 			);
 		}
 	};
 
-	// Handle errors
-	if (error) {
-		return (
-			<Alert
-				severity="error"
-				sx={{
-					width: "100%",
-					height: "100%",
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center"
-				}}>
-				Error loading chart: {error}
-			</Alert>
-		);
-	}
+	return (
+		<Box
+			ref={ref}
+			sx={{
+				position: "relative",
+				height: height,
+				width: width
+			}}>
+			{!isVisible || !shouldRender || isChartLoading ? (
+				<ChartSkeleton
+					title={chartName}
+					height={typeof height === "number" ? height : 300}
+					type={chartType.toLowerCase().includes("pie") ? "pie" : chartType.toLowerCase().includes("line") ? "line" : "bar"}
+				/>
+			) : (
+				renderChart()
+			)}
+		</Box>
+	);
+});
 
-	// Handle loading state
-	if (isChartLoading) {
-		return (
-			<Box
-				sx={{
-					width: "100%",
-					height: "100%",
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					flexDirection: "column",
-					gap: 2
-				}}>
-				<CircularProgress size={40} color="primary" />
-				<Typography variant="body2" color="text.secondary">
-					Loading chart data...
-				</Typography>
-			</Box>
-		);
-	}
+// Add displayName for debugging
+ChartWrapper.displayName = "ChartWrapper";
 
-	// Empty data state
-	if (!data || data.length === 0) {
-		return (
-			<Box
-				sx={{
-					width: "100%",
-					height: "100%",
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.02)",
-					borderRadius: 1
-				}}>
-				<Typography variant="body2" color="text.secondary">
-					No data available
-				</Typography>
-			</Box>
-		);
-	}
-
-	return <>{renderChart()}</>;
-}
+// For backward compatibility
+export default ChartWrapper;
