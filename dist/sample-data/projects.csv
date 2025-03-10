@@ -1,0 +1,11 @@
+name,type,country,capacity,investment,equity,revenue,ebitda,profit,irr
+"Solar Farm Alpha","Solar","United States",150,200000000,50000000,35000000,28000000,18000000,12.5
+"Wind Project Beta","Wind","Germany",120,180000000,45000000,32000000,25600000,16000000,11.8
+"Hydro Station Gamma","Hydro","Canada",80,160000000,40000000,28000000,22400000,14000000,10.5
+"Solar Array Delta","Solar","Spain",100,150000000,37500000,26250000,21000000,13500000,11.2
+"Wind Farm Epsilon","Wind","United Kingdom",110,165000000,41250000,28875000,23100000,14850000,10.9
+"Biomass Plant Zeta","Biomass","France",50,100000000,25000000,17500000,14000000,9000000,9.8
+"Solar Park Eta","Solar","Italy",90,135000000,33750000,23625000,18900000,12150000,11.0
+"Wind Complex Theta","Wind","Brazil",130,195000000,48750000,34125000,27300000,17550000,12.0
+"Geothermal Plant Iota","Geothermal","Iceland",40,80000000,20000000,14000000,11200000,7200000,9.5
+"Solar Field Kappa","Solar","Australia",110,165000000,41250000,28875000,23100000,14850000,11.4

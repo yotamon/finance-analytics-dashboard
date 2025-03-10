@@ -1,0 +1,120 @@
+/**
+ * Design System Global Styles
+ */
+
+/* Keyframes for animations */
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideInFromBottom {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes pulse {
+	0% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+/* Global design system styles */
+.design-system-focus-visible:focus-visible {
+	outline: 2px solid var(--color-primary-500);
+	outline-offset: 2px;
+}
+
+/* Animations */
+.design-fade-in {
+	animation: fadeIn 0.3s ease-in-out;
+}
+
+.design-slide-in {
+	animation: slideInFromBottom 0.3s ease-out;
+}
+
+.design-spin {
+	animation: spin 1s linear infinite;
+}
+
+.design-pulse {
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Helper classes */
+.design-truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Screen reader only */
+.design-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* Flexbox utilities */
+.design-flex-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.design-flex-between {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+/* Focus ring utility */
+.design-focus-ring {
+	transition: outline-color 0.2s ease-in-out;
+}
+
+.design-focus-ring:focus-visible {
+	outline: 2px solid var(--color-primary-500);
+	outline-offset: 2px;
+}
+
+/* Hover effect utility */
+.design-hover-effect {
+	transition: transform 0.2s ease-in-out;
+}
+
+.design-hover-effect:hover {
+	transform: translateY(-2px);
+}

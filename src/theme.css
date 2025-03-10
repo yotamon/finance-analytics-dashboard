@@ -1,0 +1,507 @@
+/**
+ * Theme CSS Variables
+ *
+ * This file defines fallback CSS variables and base theme styles.
+ * The actual theme variables are applied programmatically by ThemeProvider.
+ */
+
+:root {
+	/* Primary Color Palette */
+	--color-primary-50: 238, 242, 255; /* lightest */
+	--color-primary-100: 224, 231, 255;
+	--color-primary-200: 199, 210, 254;
+	--color-primary-300: 165, 180, 252;
+	--color-primary-400: 129, 140, 248;
+	--color-primary-500: 99, 102, 241; /* base */
+	--color-primary-600: 79, 70, 229;
+	--color-primary-700: 67, 56, 202;
+	--color-primary-800: 55, 48, 163;
+	--color-primary-900: 49, 46, 129;
+	--color-primary-950: 30, 27, 75; /* darkest */
+
+	/* Neutral/Gray Palette */
+	--color-neutral-50: 249, 250, 251; /* lightest */
+	--color-neutral-100: 243, 244, 246;
+	--color-neutral-200: 229, 231, 235;
+	--color-neutral-300: 209, 213, 219;
+	--color-neutral-400: 156, 163, 175;
+	--color-neutral-500: 107, 114, 128; /* base */
+	--color-neutral-600: 75, 85, 99;
+	--color-neutral-700: 55, 65, 81;
+	--color-neutral-800: 31, 41, 55;
+	--color-neutral-900: 17, 24, 39;
+	--color-neutral-950: 3, 7, 18; /* darkest */
+
+	/* Success Colors */
+	--color-success-50: 236, 253, 245;
+	--color-success-100: 209, 250, 229;
+	--color-success-500: 16, 185, 129;
+	--color-success-600: 5, 150, 105;
+
+	/* Warning Colors */
+	--color-warning-50: 255, 251, 235;
+	--color-warning-100: 254, 243, 199;
+	--color-warning-500: 245, 158, 11;
+	--color-warning-600: 217, 119, 6;
+
+	/* Error Colors */
+	--color-error-50: 254, 242, 242;
+	--color-error-100: 254, 226, 226;
+	--color-error-500: 239, 68, 68;
+	--color-error-600: 220, 38, 38;
+
+	/* Semantic Tokens - Light Mode */
+	--bg-primary: var(--color-neutral-50);
+	--bg-secondary: 255, 255, 255;
+	--bg-tertiary: var(--color-neutral-100);
+
+	--text-primary: var(--color-neutral-900);
+	--text-secondary: var(--color-neutral-600);
+	--text-tertiary: var(--color-neutral-400);
+
+	--border-light: var(--color-neutral-200);
+	--border-medium: var(--color-neutral-300);
+
+	--shadow-color: 0, 0, 0;
+	--shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+	/* Card & Container Backgrounds */
+	--card-bg: 255, 255, 255;
+	--card-bg-hover: var(--color-neutral-50);
+	--card-border: var(--color-neutral-200);
+
+	/* Chart Colors */
+	--chart-bg: 255, 255, 255;
+	--chart-accent: var(--color-primary-100);
+	--chart-grid: var(--color-neutral-200);
+
+	/* Default colors - these will be overridden by ThemeProvider */
+	--bg-main: 249, 250, 251; /* light gray */
+	--bg-secondary: 255, 255, 255; /* white */
+	--text-primary: 15, 23, 42; /* slate-900 */
+	--text-secondary: 71, 85, 105; /* slate-600 */
+	--border-color: 226, 232, 240; /* slate-200 */
+}
+
+/**
+	 * Dark mode overrides
+	 * Only override what changes in dark mode
+	 */
+html.dark {
+	/* Semantic Tokens - Dark Mode */
+	--bg-primary: var(--color-neutral-900);
+	--bg-secondary: var(--color-neutral-800);
+	--bg-tertiary: var(--color-neutral-700);
+
+	--text-primary: var(--color-neutral-100);
+	--text-secondary: var(--color-neutral-300);
+	--text-tertiary: var(--color-neutral-400);
+
+	--border-light: var(--color-neutral-700);
+	--border-medium: var(--color-neutral-600);
+
+	--shadow-color: 0, 0, 0;
+	--shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+
+	/* Card & Container Backgrounds */
+	--card-bg: var(--color-neutral-800);
+	--card-bg-hover: var(--color-neutral-700);
+	--card-border: var(--color-neutral-700);
+
+	/* Chart Colors */
+	--chart-bg: var(--color-neutral-800);
+	--chart-accent: var(--color-primary-900);
+	--chart-grid: var(--color-neutral-700);
+
+	/* Dark mode class applied to document.documentElement */
+	--bg-main: 15, 23, 42; /* slate-900 */
+	--bg-secondary: 30, 41, 59; /* slate-800 */
+	--text-primary: 248, 250, 252; /* slate-50 */
+	--text-secondary: 226, 232, 240; /* slate-200 */
+	--border-color: 51, 65, 85; /* slate-700 */
+}
+
+/* Base HTML styling */
+html {
+	background-color: rgb(var(--bg-primary));
+	color: rgb(var(--text-primary));
+	scroll-behavior: smooth;
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(var(--bg-tertiary), 0.5);
+	border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(var(--color-primary-400), 0.6);
+	border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(var(--color-primary-500), 0.8);
+}
+
+/* Focus styles */
+*:focus-visible {
+	outline: 2px solid rgb(var(--color-primary-500));
+	outline-offset: 2px;
+}
+
+/* Re-usable component classes */
+.theme-card {
+	background-color: rgb(var(--card-bg));
+	border: 1px solid rgb(var(--card-border));
+	color: rgb(var(--text-primary));
+	box-shadow: var(--shadow-sm);
+	transition: all 0.2s ease;
+}
+
+.theme-card:hover {
+	box-shadow: var(--shadow-md);
+}
+
+.theme-heading {
+	color: rgb(var(--text-primary));
+	font-weight: 600;
+}
+
+.theme-text-primary {
+	color: rgb(var(--text-primary));
+}
+
+.theme-text-secondary {
+	color: rgb(var(--text-secondary));
+}
+
+.theme-text-tertiary {
+	color: rgb(var(--text-tertiary));
+}
+
+.theme-border {
+	border: 1px solid rgb(var(--border-light));
+}
+
+.theme-primary-gradient {
+	background: linear-gradient(to right, rgb(var(--color-primary-600)), rgb(var(--color-primary-500)));
+	color: white;
+}
+
+/* Chart container styles */
+.chart-container {
+	position: relative;
+	background: white;
+	border-radius: 12px;
+	overflow: hidden;
+	transition: all 0.3s ease;
+	height: unset !important;
+}
+
+/* Override Recharts default styles */
+.recharts-cartesian-axis-tick-value {
+	font-size: 11px !important;
+	fill: #6b7280 !important;
+}
+
+.recharts-legend-item-text {
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	color: #4b5563 !important;
+}
+
+.recharts-text.recharts-label {
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	fill: #4b5563 !important;
+}
+
+/* Add subtle textures to add depth */
+.texture-overlay {
+	background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%236B7280' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+/* Animation classes */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes pulse {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.animate-fade-in {
+	animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-up {
+	animation: slideUp 0.5s ease-out;
+}
+
+.animate-pulse-slow {
+	animation: pulse 3s infinite ease-in-out;
+}
+
+/* Glass morphism utilities */
+.backdrop-blur-card {
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	background-color: rgba(var(--card-bg), 0.8);
+	border: 1px solid rgba(var(--card-border), 0.5);
+}
+
+/* Apply base theme styles to body */
+body {
+	background-color: rgb(var(--bg-main));
+	color: rgb(var(--text-primary));
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme transition effects */
+.theme-transition {
+	transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 0.3s;
+}
+
+/* Chart animations for Recharts */
+.recharts-wrapper .pulse-dot {
+	animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+	0% {
+		transform: scale(1);
+		opacity: 1;
+		filter: drop-shadow(0 0 0px rgba(138, 75, 175, 0.6));
+	}
+	50% {
+		transform: scale(1.5);
+		opacity: 0.7;
+		filter: drop-shadow(0 0 3px rgba(138, 75, 175, 0.8));
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+		filter: drop-shadow(0 0 0px rgba(138, 75, 175, 0.6));
+	}
+}
+
+.recharts-sector {
+	transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+.recharts-sector:hover {
+	transform: scale(1.05);
+	filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.recharts-bar-rectangle {
+	transition: opacity 0.3s, transform 0.3s;
+}
+
+.recharts-bar-rectangle:hover {
+	opacity: 0.8;
+}
+
+.recharts-wrapper .recharts-cartesian-grid-horizontal line,
+.recharts-wrapper .recharts-cartesian-grid-vertical line {
+	transition: stroke 0.3s ease;
+}
+
+.recharts-wrapper:hover .recharts-cartesian-grid-horizontal line,
+.recharts-wrapper:hover .recharts-cartesian-grid-vertical line {
+	stroke: rgba(0, 0, 0, 0.15);
+}
+
+.recharts-default-tooltip {
+	transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+	transform-origin: center bottom;
+	animation: tooltipFadeIn 0.3s;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.recharts-default-tooltip:hover {
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes tooltipFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+/* Beautiful line animations */
+.recharts-line-curve {
+	stroke-dasharray: 2000;
+	stroke-dashoffset: 2000;
+	animation: drawLine 2s ease-out forwards;
+}
+
+@keyframes drawLine {
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+/* Bar chart entry animation */
+.recharts-bar-rectangle {
+	transform-origin: bottom;
+	animation: growBar 1s cubic-bezier(0.26, 0.54, 0.32, 1) forwards;
+}
+
+@keyframes growBar {
+	from {
+		opacity: 0;
+		transform: scaleY(0);
+	}
+	to {
+		opacity: 1;
+		transform: scaleY(1);
+	}
+}
+
+/* Dark mode chart styles */
+[data-theme="dark"] .recharts-wrapper .recharts-cartesian-axis-line,
+[data-theme="dark"] .recharts-wrapper .recharts-cartesian-axis-tick-line {
+	stroke: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .recharts-wrapper .recharts-cartesian-axis-tick-value {
+	fill: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .recharts-wrapper .recharts-cartesian-grid-horizontal line,
+[data-theme="dark"] .recharts-wrapper .recharts-cartesian-grid-vertical line {
+	stroke: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .recharts-wrapper:hover .recharts-cartesian-grid-horizontal line,
+[data-theme="dark"] .recharts-wrapper:hover .recharts-cartesian-grid-vertical line {
+	stroke: rgba(255, 255, 255, 0.15);
+}
+
+.recharts-brush rect.recharts-brush-slide {
+	transition: fill 0.3s;
+}
+
+.recharts-brush:hover rect.recharts-brush-slide {
+	fill: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .recharts-brush rect.recharts-brush-slide {
+	fill: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .recharts-brush:hover rect.recharts-brush-slide {
+	fill: rgba(255, 255, 255, 0.1);
+}
+
+/* Interactive pie chart specific effects */
+.pie-hover-effect .recharts-sector {
+	transition: transform 0.3s ease-out, filter 0.3s ease-out;
+	transform-origin: center center;
+	filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.1));
+}
+
+.pie-hover-effect .recharts-sector:hover {
+	transform: scale(1.05) translateY(-3px);
+	filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.15));
+}
+
+/* Tooltip animation for better visibility */
+.custom-tooltip {
+	animation: tooltipPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	transform-origin: center top;
+}
+
+@keyframes tooltipPop {
+	0% {
+		opacity: 0;
+		transform: scale(0.8);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Reference line animation */
+.recharts-reference-line {
+	animation: dashLine 1s ease-out forwards;
+	stroke-dasharray: 6;
+	stroke-dashoffset: 100;
+}
+
+@keyframes dashLine {
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+/* Animate chart on initial load */
+.animate-chart {
+	animation: fadeInUp 0.8s cubic-bezier(0.26, 0.54, 0.32, 1) forwards;
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Dark mode chart container */
+[data-theme="dark"] .chart-container {
+	background: rgba(30, 41, 59, 0.8);
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+}
