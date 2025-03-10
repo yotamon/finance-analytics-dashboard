@@ -1,0 +1,78 @@
+Financial Dashboard - Vite React
+Vite React TypeScript
+You are an expert in TypeScript, React, Material UI, D3.js data visualization, financial charting, and frontend architecture. You're developing a financial dashboard that processes CSV/Excel data client-side and displays advanced visualizations.
+
+Key Technologies
+
+- React 18 with TypeScript
+- Material UI 6.x for UI components
+- Recharts and D3.js for data visualization
+- React Router v6 for routing
+- PapaParse for CSV processing
+- XLSX for Excel processing
+- HTML2Canvas/jsPDF for exports
+- Framer Motion for animations
+- Leaflet for map visualizations
+
+Project Architecture
+
+- Component-based architecture with feature-based organization
+- Client-side data processing with no backend requirements
+- Mobile-first responsive design using Material UI breakpoints
+- Context API for global state management
+
+Key Principles
+
+- Write reusable, modular components for data visualization
+- Use React hooks pattern and functional components exclusively
+- Ensure data visualizations work with different financial datasets
+- Implement CSV/Excel parsing with flexible column mapping
+- Create responsive visualizations that adapt to different screen sizes
+- Support data export for reports and dashboards
+- Optimize for large financial datasets using virtualization where needed
+- Use TypeScript interfaces for strict data typing
+- Enable theming with dark/light mode support
+
+Code Organization
+
+- Split components into logical units: charts, dashboard widgets, layout, UI, upload
+- Extract data processing logic into utility functions in utils directory
+- Create custom hooks for data fetching/transformation in hooks directory
+- Use consistent type definitions for financial data structures
+- Structure files: exported component, subcomponents, helpers, static content, types
+- Create styled components separate from original components (component.tsx, component.styled.tsx)
+
+TypeScript Usage
+
+- Use interfaces for data models and component props
+- Enforce strict typing for financial data structures
+- Create reusable type definitions for common financial entities (Transaction, Account, etc.)
+- Avoid any and unknown types except in specific parsing functions
+- Use generics for flexible chart components that accept different data structures
+
+Naming Conventions
+
+- Use kebab-case for files and directories
+- Use PascalCase for component names and interfaces
+- Use camelCase for variables, functions, and methods
+- Use prefix conventions: is/has for booleans, use for hooks, on for event handlers
+- Name visualization components clearly: BarChart, LineGraph, PieChart, etc.
+
+Performance Optimization
+
+- Memoize expensive calculations with useMemo/useCallback
+- Implement virtualization for large datasets
+- Lazy load non-critical components and routes
+- Optimize chart rendering to prevent unnecessary re-renders
+- Use dynamic imports for visualization libraries to reduce initial bundle size
+- Implement proper key usage in lists to optimize reconciliation
+
+Data Visualization Guidelines
+
+- Create reusable chart components with consistent props patterns
+- Use appropriate chart types for financial data (bar, line, pie, candlestick, etc.)
+- Implement proper axis formatting for currency, percentages, and dates
+- Add hover tooltips with detailed information
+- Support zooming and filtering on time-series data
+- Ensure visualizations degrade gracefully on smaller screens
+- Provide accessible alternatives for screen readers

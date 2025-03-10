@@ -1,10 +1,10 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label, Cell, LabelList } from "recharts";
-import { CustomTooltip } from "./CustomTooltip";
-import { ChartTheme } from "./ChartTheme";
 import { Box, Typography, Paper, useTheme } from "@mui/material";
 import { useI18n } from "../../context/I18nContext";
+import { alpha } from "@mui/material/styles";
+import { BarChart } from "@mui/x-charts/BarChart";
+import { axisClasses } from "@mui/x-charts";
 
 export function CountryComparisonChart({ data = [] }) {
 	const muiTheme = useTheme();
@@ -33,11 +33,13 @@ export function CountryComparisonChart({ data = [] }) {
 	// Convert to array and sort by investment amount
 	const chartData = Object.values(groupedData)
 		.sort((a, b) => b.capacity - a.capacity)
-		.slice(0, 6); // Show only top 6 countries
-
-	// Find max values for scaling - with safety checks for empty data
-	const maxCapacity = chartData.length > 0 ? Math.max(...chartData.map(item => item.capacity)) * 1.1 : 100;
-	const maxInvestment = chartData.length > 0 ? Math.max(...chartData.map(item => item.investment)) * 1.1 : 100;
+		.slice(0, 6) // Show only top 6 countries
+		.map((item, index) => ({
+			...item,
+			id: `country-${index}`, // Add unique id for each country
+			capacity: Math.max(0, item.capacity), // Ensure positive values
+			investment: Math.max(0, item.investment) // Ensure positive values
+		}));
 
 	// If no data is available, show a message
 	if (chartData.length === 0) {
@@ -59,30 +61,14 @@ export function CountryComparisonChart({ data = [] }) {
 		);
 	}
 
-	// Custom formatter for tooltips
-	const formatTooltipValue = (value, name) => {
-		if (name === "capacity") {
-			return `${value.toFixed(0)} MW`;
-		}
-		if (name === "investment") {
-			return `$${value.toLocaleString()}M`;
-		}
-		return value;
-	};
+	// Get country names for x-axis
+	const countries = chartData.map(item => item.country);
 
-	// Custom tick component to handle long country names
-	const CustomizedAxisTick = props => {
-		const { x, y, payload } = props;
-		return (
-			<g transform={`translate(${x},${y})`}>
-				<text x={0} y={0} dy={16} textAnchor="middle" fill={muiTheme.palette.text.secondary} fontSize={11}>
-					{payload.value.length > 10 ? payload.value.substring(0, 8) + "..." : payload.value}
-				</text>
-			</g>
-		);
-	};
+	// Format data for MUI X Charts
+	const capacityData = chartData.map(item => item.capacity);
+	const investmentData = chartData.map(item => item.investment);
 
-	// Get an appropriate color for each country
+	// Get an appropriate color for each country for capacity bars
 	const getCountryColor = index => {
 		// Use Material UI theme colors
 		const colors = [
@@ -96,61 +82,118 @@ export function CountryComparisonChart({ data = [] }) {
 		return colors[index % colors.length];
 	};
 
-	// Return the bar chart with country comparison
+	// Generate colors for capacity bars
+	const capacityColors = chartData.map((_, index) => getCountryColor(index));
+
+	// Chart configuration
+	const chartSetting = {
+		height: 400,
+		sx: {
+			[`.${axisClasses.left} .${axisClasses.label}`]: {
+				transform: "translate(-20px, 0)"
+			},
+			[`.${axisClasses.right} .${axisClasses.label}`]: {
+				transform: "translate(20px, 0)"
+			}
+		}
+	};
+
+	const valueFormatter = (value, type) => {
+		if (type === "capacity") {
+			return `${value.toFixed(0)} MW`;
+		}
+		if (type === "investment") {
+			return `$${value.toLocaleString()}M`;
+		}
+		return value;
+	};
+
 	return (
-		<Box sx={{ width: "100%", height: 400 }}>
-			<ResponsiveContainer width="100%" height="100%">
-				<BarChart data={chartData} margin={{ top: 30, right: 40, left: 20, bottom: 40 }} barCategoryGap={15}>
-					<CartesianGrid strokeDasharray="3 3" vertical={false} stroke={muiTheme.palette.divider} />
-					<XAxis dataKey="country" tick={<CustomizedAxisTick />} height={40} stroke={muiTheme.palette.text.secondary} />
-
-					{/* Left Y-axis for capacity */}
-					<YAxis
-						yAxisId="left"
-						orientation="left"
-						tickFormatter={value => `${value}MW`}
-						domain={[0, maxCapacity]}
-						tick={{ fontSize: 10 }}
-						tickMargin={5}
-						width={55}
-						stroke={muiTheme.palette.text.secondary}>
-						<Label value={t("charts.axis.capacity")} angle={-90} position="insideLeft" style={{ fontSize: 12, fill: muiTheme.palette.text.secondary }} offset={-5} />
-					</YAxis>
-
-					{/* Right Y-axis for investment */}
-					<YAxis
-						yAxisId="right"
-						orientation="right"
-						tickFormatter={value => `$${value}M`}
-						domain={[0, maxInvestment]}
-						tick={{ fontSize: 10 }}
-						tickMargin={5}
-						width={55}
-						stroke={muiTheme.palette.text.secondary}>
-						<Label value={t("charts.label.investment")} angle={90} position="insideRight" style={{ fontSize: 12, fill: muiTheme.palette.text.secondary }} offset={10} />
-					</YAxis>
-
-					<Tooltip content={<CustomTooltip valueFormatter={formatTooltipValue} chartType="bar" />} />
-
-					<Legend
-						wrapperStyle={{
-							paddingTop: 5,
-							marginBottom: 5,
+		<Box sx={{ width: "100%", height: 400, position: "relative" }}>
+			<BarChart
+				dataset={chartData}
+				xAxis={[
+					{
+						scaleType: "band",
+						data: countries,
+						tickLabelStyle: {
+							angle: 0,
+							textAnchor: "middle",
+							fontSize: 11,
+							fill: muiTheme.palette.text.secondary
+						},
+						label: "Country"
+					}
+				]}
+				yAxis={[
+					{
+						id: "capacityAxis",
+						scaleType: "linear",
+						valueFormatter: value => valueFormatter(value, "capacity"),
+						labelStyle: {
 							fontSize: 12,
-							color: muiTheme.palette.text.primary
-						}}
-						verticalAlign="top"
-						align="center"
-					/>
-
-					<Bar yAxisId="left" dataKey="capacity" name={t("charts.label.capacity")} radius={[4, 4, 0, 0]} barSize={30}>
-						{chartData.map((entry, index) => (
-							<Cell key={`cell-${index}`} fill={getCountryColor(index)} />
-						))}
-						<LabelList dataKey="capacity" position="top" formatter={value => `${value}MW`} style={{ fontSize: 10, fill: muiTheme.palette.text.secondary }} />
-					</Bar>
-				</BarChart>
-			</ResponsiveContainer>
+							fill: muiTheme.palette.text.secondary
+						},
+						tickLabelStyle: {
+							fontSize: 10,
+							fill: muiTheme.palette.text.secondary
+						},
+						label: t("charts.axis.capacity")
+					},
+					{
+						id: "investmentAxis",
+						scaleType: "linear",
+						valueFormatter: value => valueFormatter(value, "investment"),
+						labelStyle: {
+							fontSize: 12,
+							fill: muiTheme.palette.text.secondary
+						},
+						tickLabelStyle: {
+							fontSize: 10,
+							fill: muiTheme.palette.text.secondary
+						},
+						label: t("charts.label.investment")
+					}
+				]}
+				series={[
+					{
+						id: "capacity",
+						data: capacityData,
+						label: t("charts.label.capacity"),
+						valueFormatter: value => valueFormatter(value, "capacity"),
+						yAxisKey: "capacityAxis",
+						color: muiTheme.palette.primary.main,
+						highlightScope: {
+							highlighted: "item",
+							faded: "global"
+						}
+					},
+					{
+						id: "investment",
+						data: investmentData,
+						label: t("charts.label.investment"),
+						valueFormatter: value => valueFormatter(value, "investment"),
+						yAxisKey: "investmentAxis",
+						color: alpha(muiTheme.palette.secondary.main, 0.7),
+						highlightScope: {
+							highlighted: "item",
+							faded: "global"
+						}
+					}
+				]}
+				colors={[muiTheme.palette.primary.main, alpha(muiTheme.palette.secondary.main, 0.7)]}
+				margin={{ top: 30, right: 40, left: 20, bottom: 40 }}
+				slotProps={{
+					legend: {
+						position: { vertical: "top", horizontal: "middle" },
+						labelStyle: {
+							fontSize: 12,
+							fill: muiTheme.palette.text.primary
+						}
+					}
+				}}
+				{...chartSetting}
+			/>
 		</Box>
 	);
 }

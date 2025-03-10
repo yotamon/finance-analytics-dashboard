@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.7",
+    "@mui/x-charts": "^7.27.1",
     "d3": "^7.8.5",
     "d3-geo": "^3.1.0",
     "d3-sankey": "^0.12.3",
@@ -32,7 +33,6 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.16.0",
     "recharts": "^2.15.1",
-    "sheetjs": "^2.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

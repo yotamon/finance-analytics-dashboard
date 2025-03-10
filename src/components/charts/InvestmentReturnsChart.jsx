@@ -1,9 +1,10 @@
 import React from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label, Cell } from "recharts";
-import { CustomTooltip } from "./CustomTooltip";
-import { ChartTheme } from "./ChartTheme";
+import { Box, useTheme } from "@mui/material";
+import { BarChart } from "@mui/x-charts/BarChart";
 
 export function InvestmentReturnsChart({ data }) {
+	const theme = useTheme();
+
 	// Sort projects by IRR in descending order and take top 5
 	const topProjects = [...data].sort((a, b) => (b.irr || 0) - (a.irr || 0)).slice(0, 5);
 
@@ -22,85 +23,121 @@ export function InvestmentReturnsChart({ data }) {
 		};
 	});
 
-	// Format tooltip values
-	const formatTooltipValue = (value, name) => {
-		if (name === "irr") {
-			return `${(value * 100).toFixed(1)}%`;
-		}
-		if (name === "investment") {
-			return `$${value.toLocaleString()}M`;
-		}
-		return value;
-	};
+	// Extract project names for x-axis
+	const projectNames = chartData.map(project => project.name);
 
-	// Custom tick component to handle long project names
-	const CustomizedXAxisTick = props => {
-		const { x, y, payload } = props;
-		return (
-			<g transform={`translate(${x},${y})`}>
-				<text x={0} y={0} dy={16} textAnchor="middle" fill="#666" fontSize={11}>
-					{payload.value}
-				</text>
-			</g>
-		);
-	};
+	// Extract IRR and investment data
+	const irrData = chartData.map(project => project.irr);
+	const investmentData = chartData.map(project => project.investment);
 
-	// Get colors based on project type
-	const getIrrColor = index => {
-		return ChartTheme.colors.primary[index % ChartTheme.colors.primary.length];
-	};
+	// Calculate max values for y-axes scale
+	const maxIrr = Math.max(...irrData) * 1.2;
+	const maxInvestment = Math.max(...investmentData) * 1.2;
+
+	// Generate colors for IRR bars based on project index
+	const irrColors = chartData.map((_, index) => {
+		const colors = [theme.palette.primary.main, theme.palette.primary.dark, theme.palette.secondary.main, theme.palette.secondary.dark, theme.palette.info.main];
+		return colors[index % colors.length];
+	});
+
+	// Value formatters for tooltips and axis labels
+	const formatIrr = value => `${(value * 100).toFixed(1)}%`;
+	const formatInvestment = value => `$${value.toLocaleString()}M`;
 
 	return (
-		<ResponsiveContainer width="100%" height={400}>
-			<BarChart data={chartData} margin={{ top: 30, right: 30, left: 20, bottom: 40 }} barCategoryGap={16}>
-				<CartesianGrid strokeDasharray="3 3" vertical={false} />
-
-				<XAxis dataKey="name" tick={<CustomizedXAxisTick />} height={50} interval={0} />
-
-				{/* Left Y-axis for IRR */}
-				<YAxis
-					yAxisId="left"
-					orientation="left"
-					tickFormatter={value => `${(value * 100).toFixed(0)}%`}
-					domain={[0, Math.max(...chartData.map(d => d.irr)) * 1.2]}
-					tick={{ fontSize: 10 }}
-					tickMargin={5}
-					width={50}>
-					<Label value="IRR (%)" angle={-90} position="insideLeft" style={{ fontSize: 12, fill: "#666" }} offset={-5} />
-				</YAxis>
-
-				{/* Right Y-axis for Investment */}
-				<YAxis
-					yAxisId="right"
-					orientation="right"
-					tickFormatter={value => `$${value}M`}
-					domain={[0, Math.max(...chartData.map(d => d.investment)) * 1.2]}
-					tick={{ fontSize: 10 }}
-					tickMargin={5}
-					width={55}>
-					<Label value="Investment ($M)" angle={90} position="insideRight" style={{ fontSize: 12, fill: "#666" }} offset={5} />
-				</YAxis>
-
-				<Tooltip content={<CustomTooltip labelFormatter={(name, item) => item[0]?.payload?.fullName || name} valueFormatter={formatTooltipValue} chartType="bar" />} />
-
-				<Legend
-					wrapperStyle={{
-						paddingTop: 10,
-						paddingBottom: 5,
-						fontSize: 12
-					}}
-					verticalAlign="top"
-					align="center"
-				/>
-
-				<Bar yAxisId="left" dataKey="irr" name="IRR (%)" radius={[4, 4, 0, 0]} barSize={24}>
-					{chartData.map((entry, index) => (
-						<Cell key={`cell-${index}`} fill={getIrrColor(index)} />
-					))}
-				</Bar>
-
-				<Bar yAxisId="right" dataKey="investment" name="Investment ($M)" radius={[4, 4, 0, 0]} fill="#8884d8" opacity={0.6} barSize={24} />
-			</BarChart>
-		</ResponsiveContainer>
+		<Box sx={{ width: "100%", height: 400 }}>
+			<BarChart
+				dataset={chartData}
+				xAxis={[
+					{
+						scaleType: "band",
+						data: projectNames,
+						tickLabelStyle: {
+							angle: 0,
+							textAnchor: "middle",
+							fontSize: 11,
+							fill: theme.palette.text.secondary
+						}
+					}
+				]}
+				yAxis={[
+					{
+						id: "irrAxis",
+						scaleType: "linear",
+						valueFormatter: formatIrr,
+						min: 0,
+						max: maxIrr,
+						tickNumber: 5,
+						labelStyle: {
+							fontSize: 12,
+							fill: theme.palette.text.secondary
+						},
+						tickLabelStyle: {
+							fontSize: 10,
+							fill: theme.palette.text.secondary
+						},
+						label: "IRR (%)"
+					},
+					{
+						id: "investmentAxis",
+						scaleType: "linear",
+						valueFormatter: formatInvestment,
+						min: 0,
+						max: maxInvestment,
+						tickNumber: 5,
+						labelStyle: {
+							fontSize: 12,
+							fill: theme.palette.text.secondary
+						},
+						tickLabelStyle: {
+							fontSize: 10,
+							fill: theme.palette.text.secondary
+						},
+						label: "Investment ($M)"
+					}
+				]}
+				series={[
+					{
+						id: "irr",
+						data: irrData,
+						label: "IRR (%)",
+						valueFormatter: formatIrr,
+						yAxisKey: "irrAxis",
+						color: theme.palette.primary.main,
+						highlightScope: {
+							highlighted: "item",
+							faded: "global"
+						}
+					},
+					{
+						id: "investment",
+						data: investmentData,
+						label: "Investment ($M)",
+						valueFormatter: formatInvestment,
+						yAxisKey: "investmentAxis",
+						color: theme.palette.secondary.main,
+						highlightScope: {
+							highlighted: "item",
+							faded: "global"
+						},
+						opacity: 0.6
+					}
+				]}
+				slotProps={{
+					legend: {
+						position: { vertical: "top", horizontal: "middle" },
+						labelStyle: {
+							fontSize: 12,
+							fill: theme.palette.text.primary
+						}
+					},
+					bar: {
+						radius: 4
+					}
+				}}
+				margin={{ top: 30, right: 40, left: 60, bottom: 40 }}
+				height={400}
+			/>
+		</Box>
 	);
 }

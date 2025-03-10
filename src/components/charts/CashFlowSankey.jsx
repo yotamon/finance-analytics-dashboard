@@ -286,7 +286,7 @@ export const CashFlowSankey = ({ data }) => {
 				// Add node rectangles
 				nodes_g
 					.append("rect")
-					.attr("height", d => d.y1 - d.y0)
+					.attr("height", d => Math.max(0, d.y1 - d.y0))
 					.attr("width", d => d.x1 - d.x0)
 					.attr("fill", getNodeColor)
 					.attr("stroke", d => d3.color(getNodeColor(d)).darker(0.5))

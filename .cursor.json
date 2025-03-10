@@ -1,0 +1,133 @@
+{
+  "formatOnSave": true,
+  "codeLens": true,
+  "formatters": {
+    "javascript": "prettier",
+    "javascriptreact": "prettier",
+    "json": "prettier",
+    "css": "prettier",
+    "html": "prettier",
+    "markdown": "prettier"
+  },
+  "linters": {
+    "javascript": "eslint",
+    "javascriptreact": "eslint"
+  },
+  "editor": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "detectIndentation": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true
+  },
+  "telemetry": {
+    "telemetryLevel": "error"
+  },
+  "terminal": {
+    "integrated": {
+      "shell": {
+        "windows": "C:\\Users\\yotam\\AppData\\Local\\Microsoft\\WindowsApps\\Microsoft.PowerShell_8wekyb3d8bbwe\\pwsh.exe"
+      }
+    }
+  },
+  "fileAssociations": {
+    "*.jsx": "javascriptreact",
+    "*.js": "javascript",
+    "*.css": "css",
+    "*.json": "json"
+  },
+  "snippets": {
+    "javascriptreact": {
+      "React Functional Component": {
+        "prefix": "rfc",
+        "body": [
+          "import React from 'react';",
+          "",
+          "const ${1:ComponentName} = ({ ${2:props} }) => {",
+          "  return (",
+          "    <div>",
+          "      $0",
+          "    </div>",
+          "  );",
+          "};",
+          "",
+          "export default ${1:ComponentName};"
+        ],
+        "description": "React Functional Component"
+      },
+      "React Hook": {
+        "prefix": "rhook",
+        "body": [
+          "import { useState, useEffect } from 'react';",
+          "",
+          "const use${1:HookName} = (${2:params}) => {",
+          "  const [${3:state}, set${3/(.*)/${3:/capitalize}/}] = useState(${4:initialState});",
+          "",
+          "  useEffect(() => {",
+          "    $0",
+          "  }, [${5:dependencies}]);",
+          "",
+          "  return ${6:returnValue};",
+          "};",
+          "",
+          "export default use${1:HookName};"
+        ],
+        "description": "React Custom Hook Template"
+      }
+    }
+  },
+  "projectTechnology": {
+    "frontend": {
+      "framework": "React",
+      "buildTool": "Vite",
+      "styling": [
+        "TailwindCSS",
+        "Material UI"
+      ],
+      "stateManagement": "React Context API",
+      "routing": "React Router",
+      "dataVisualization": [
+        "Recharts",
+        "D3.js",
+        "MUI X-Charts",
+        "Leaflet"
+      ]
+    },
+    "preferred": {
+      "fileNaming": "kebab-case",
+      "componentNaming": "PascalCase",
+      "hookNaming": "camelCase",
+      "projectStructure": "feature-based",
+      "importOrder": [
+        "react",
+        "external libraries",
+        "components",
+        "hooks",
+        "utils",
+        "styles"
+      ]
+    },
+    "conventions": {
+      "componentStructure": {
+        "components": "Feature-based organization with shared UI components in 'ui' directory",
+        "pages": "Route-based components in 'pages' directory",
+        "hooks": "Custom hooks in 'hooks' directory",
+        "utils": "Helper functions in 'utils' directory",
+        "services": "API and data services in 'services' directory"
+      }
+    }
+  },
+  "codeQuality": {
+    "recommended": {
+      "eslintRules": {
+        "react/prop-types": "error",
+        "react/jsx-key": "error",
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": "warn",
+        "no-unused-vars": "warn",
+        "no-console": "warn"
+      },
+      "commitMessageFormat": "feat|fix|docs|style|refactor|perf|test|chore: message"
+    }
+  }
+}

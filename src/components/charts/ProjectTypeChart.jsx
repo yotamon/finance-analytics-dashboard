@@ -1,9 +1,11 @@
 import React from "react";
-import { ChartWrapper } from "./ChartWrapper";
 import { useI18n } from "../../context/I18nContext";
+import { Box, useTheme } from "@mui/material";
+import { PieChart } from "@mui/x-charts/PieChart";
 
 export function ProjectTypeChart({ data }) {
 	const { t } = useI18n();
+	const theme = useTheme();
 
 	// Group projects by type and calculate total capacity
 	const projectTypes = data.reduce((acc, project) => {
@@ -20,8 +22,12 @@ export function ProjectTypeChart({ data }) {
 		return acc;
 	}, {});
 
-	// Convert to array for the chart - keeping Google Charts format for compatibility
-	const chartData = [[t("charts.label.projectType"), t("charts.label.capacity")], ...Object.values(projectTypes).map(type => [type.name, type.capacity])];
+	// Convert to array format for MUI X Charts
+	const chartData = Object.values(projectTypes).map(type => ({
+		id: type.name,
+		value: type.capacity,
+		label: type.name
+	}));
 
 	// Colors for different project types
 	const sliceColors = [
@@ -31,31 +37,44 @@ export function ProjectTypeChart({ data }) {
 		"#d97706" // Solar Rooftop
 	];
 
-	// Prepare options in a format compatible with the updated ChartWrapper
-	const options = {
-		pieHole: 0.4, // For donut chart if supported
-		legend: { position: "bottom" },
-		series: {}, // Initialize series
-		pieSliceText: "percentage",
-		tooltip: {
-			text: "value",
-			trigger: "focus"
-		},
-		chartArea: {
-			width: "85%",
-			height: "75%"
-		},
-		animation: {
-			startup: true,
-			duration: 1000,
-			easing: "out"
+	// Value formatter for tooltips and labels
+	const valueFormatter = value => {
+		if (value === undefined || value === null) {
+			return "";
 		}
+		if (typeof value === "number") {
+			return `${Math.round(value)} MW`;
+		}
+		return `${value}`;
 	};
 
-	// Add color information in a format the new ChartWrapper understands
-	Object.values(projectTypes).forEach((_, index) => {
-		options.series[index] = { color: sliceColors[index % sliceColors.length] };
-	});
-
-	return <ChartWrapper chartType="PieChart" data={chartData} options={options} chartName="Project Type Chart" />;
+	return (
+		<Box sx={{ width: "100%", height: 350 }}>
+			<PieChart
+				series={[
+					{
+						data: chartData,
+						innerRadius: 60,
+						outerRadius: 120,
+						paddingAngle: 2,
+						cornerRadius: 4,
+						highlightScope: { faded: "global", highlighted: "item" },
+						valueFormatter
+					}
+				]}
+				colors={sliceColors}
+				margin={{ top: 10, bottom: 50, left: 10, right: 10 }}
+				slotProps={{
+					legend: {
+						position: { vertical: "bottom", horizontal: "middle" },
+						labelStyle: {
+							fontSize: 14,
+							fill: theme.palette.text.primary
+						}
+					}
+				}}
+				height={350}
+			/>
+		</Box>
+	);
 }

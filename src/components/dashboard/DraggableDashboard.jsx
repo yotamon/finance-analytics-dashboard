@@ -24,7 +24,8 @@ import {
 	MoreVert as MoreVertIcon,
 	Refresh as RefreshIcon,
 	AspectRatio as AspectRatioIcon,
-	Download as DownloadIcon
+	Download as DownloadIcon,
+	ViewColumn as ViewColumnIcon
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { alpha } from "@mui/material/styles";
@@ -234,6 +235,72 @@ export default function DraggableDashboard({ financialData, projectData, country
 	// Menu state for chart options
 	const [menuAnchorEl, setMenuAnchorEl] = useState(null);
 	const [activeMenu, setActiveMenu] = useState(null);
+
+	// Add state for size submenu
+	const [sizeMenuAnchorEl, setSizeMenuAnchorEl] = useState(null);
+
+	// Add function to handle card size changes
+	const handleChangeCardSize = (chartId, size) => {
+		// Find the current layout
+		const currentBreakpoint = getCurrentBreakpoint();
+		const currentLayouts = layouts[currentBreakpoint] || [];
+
+		// Find the chart in the layout
+		const chartLayout = currentLayouts.find(item => item.i === chartId);
+
+		if (chartLayout) {
+			const newLayouts = { ...layouts };
+			const newCurrentLayout = [...currentLayouts];
+			const chartIndex = newCurrentLayout.findIndex(item => item.i === chartId);
+
+			// Update the width based on the selected size
+			const newWidth = size === "1/3" ? 4 : size === "1/2" ? 6 : size === "full" ? 12 : chartLayout.w;
+
+			// Create the updated layout
+			const updatedLayout = {
+				...chartLayout,
+				w: newWidth
+			};
+
+			// Replace the old layout with the updated one
+			newCurrentLayout[chartIndex] = updatedLayout;
+			newLayouts[currentBreakpoint] = newCurrentLayout;
+
+			// Update the layouts state
+			setLayouts(newLayouts);
+
+			// Save the layouts and trigger onLayoutChange
+			if (onLayoutChange) {
+				onLayoutChange(newLayouts);
+			}
+		}
+
+		// Close menus
+		setSizeMenuAnchorEl(null);
+		setMenuAnchorEl(null);
+	};
+
+	// Function to get current breakpoint
+	const getCurrentBreakpoint = () => {
+		const width = window.innerWidth;
+		if (width >= 1200) return "lg";
+		if (width >= 996) return "md";
+		if (width >= 768) return "sm";
+		if (width >= 480) return "xs";
+		return "xxs";
+	};
+
+	// Handle size menu open
+	const handleSizeMenuOpen = event => {
+		setSizeMenuAnchorEl(event.currentTarget);
+		// Don't close the main menu
+		event.stopPropagation();
+	};
+
+	// Handle size menu close
+	const handleSizeMenuClose = () => {
+		setSizeMenuAnchorEl(null);
+	};
 
 	// Handle menu open
 	const handleMenuOpen = (event, chartId) => {
@@ -587,6 +654,14 @@ export default function DraggableDashboard({ financialData, projectData, country
 						}
 					}
 				}}>
+				{/* Add Card Size option */}
+				<MenuItem onClick={handleSizeMenuOpen}>
+					<ListItemIcon>
+						<ViewColumnIcon fontSize="small" />
+					</ListItemIcon>
+					<ListItemText primary={t("dashboard.cardSize")} />
+				</MenuItem>
+
 				<MenuItem
 					onClick={() => {
 						toggleMaximize(activeMenu);
@@ -608,6 +683,96 @@ export default function DraggableDashboard({ financialData, projectData, country
 						<DownloadIcon fontSize="small" />
 					</ListItemIcon>
 					<ListItemText primary={t("dashboard.download")} />
+				</MenuItem>
+			</Menu>
+
+			{/* Size Submenu */}
+			<Menu
+				anchorEl={sizeMenuAnchorEl}
+				open={Boolean(sizeMenuAnchorEl)}
+				onClose={handleSizeMenuClose}
+				MenuListProps={{
+					"aria-labelledby": "chart-size-button",
+					dense: true
+				}}
+				PaperProps={{
+					elevation: 3,
+					sx: {
+						minWidth: 120,
+						borderRadius: 2,
+						mt: 0.5,
+						boxShadow: theme.shadows[4],
+						"& .MuiMenuItem-root": {
+							py: 1,
+							"&:hover": {
+								bgcolor: alpha(theme.palette.primary.main, 0.08)
+							}
+						}
+					}
+				}}
+				transformOrigin={{ horizontal: "right", vertical: "top" }}
+				anchorOrigin={{ horizontal: "right", vertical: "bottom" }}>
+				<MenuItem onClick={() => handleChangeCardSize(activeMenu, "1/3")}>
+					<ListItemIcon>
+						<Box
+							component="span"
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								fontSize: "0.75rem",
+								fontWeight: "medium",
+								bgcolor: alpha(theme.palette.primary.light, 0.2),
+								borderRadius: 0.5,
+								px: 1,
+								py: 0.25
+							}}>
+							1/3
+						</Box>
+					</ListItemIcon>
+					<ListItemText primary={t("dashboard.widthSmall")} />
+				</MenuItem>
+
+				<MenuItem onClick={() => handleChangeCardSize(activeMenu, "1/2")}>
+					<ListItemIcon>
+						<Box
+							component="span"
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								fontSize: "0.75rem",
+								fontWeight: "medium",
+								bgcolor: alpha(theme.palette.primary.light, 0.2),
+								borderRadius: 0.5,
+								px: 1,
+								py: 0.25
+							}}>
+							1/2
+						</Box>
+					</ListItemIcon>
+					<ListItemText primary={t("dashboard.widthMedium")} />
+				</MenuItem>
+
+				<MenuItem onClick={() => handleChangeCardSize(activeMenu, "full")}>
+					<ListItemIcon>
+						<Box
+							component="span"
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								fontSize: "0.75rem",
+								fontWeight: "medium",
+								bgcolor: alpha(theme.palette.primary.light, 0.2),
+								borderRadius: 0.5,
+								px: 1,
+								py: 0.25
+							}}>
+							1/1
+						</Box>
+					</ListItemIcon>
+					<ListItemText primary={t("dashboard.widthFull")} />
 				</MenuItem>
 			</Menu>
 		</Box>

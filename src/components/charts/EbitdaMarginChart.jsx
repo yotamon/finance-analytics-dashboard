@@ -1,9 +1,11 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ComposedChart, Legend, ReferenceLine, ReferenceArea, Label } from "recharts";
-import { CustomTooltip } from "./CustomTooltip";
-import { ChartTheme } from "./ChartTheme";
+import { Box, useTheme } from "@mui/material";
+import { LineChart } from "@mui/x-charts/LineChart";
+import { ChartsReferenceLine } from "@mui/x-charts";
 
 export function EbitdaMarginChart({ data }) {
+	const theme = useTheme();
+
 	// Calculate EBITDA margin for each year
 	const chartData = data.years.map((year, index) => {
 		const revenue = data.revenues[index];
@@ -28,16 +30,13 @@ export function EbitdaMarginChart({ data }) {
 	const industryAvg = 15; // Example industry average EBITDA margin
 	const targetMargin = 25; // Example target margin
 
-	// Custom formatting for tooltip
-	const formatTooltipValue = (value, name) => {
-		if (name === "margin") {
-			return `${value.toFixed(1)}%`;
-		}
-		return value;
-	};
+	// Extract data for charts
+	const years = chartData.map(d => d.year);
+	const marginData = chartData.map(d => d.margin);
 
-	// Label formatter for tooltip
-	const labelFormatter = label => `Year: ${label}`;
+	// Calculate y-axis domain
+	const maxMargin = Math.max(...marginData);
+	const yMax = Math.max(100, Math.ceil(maxMargin / 10) * 10);
 
 	// Determine optimal tick values to prevent overlapping
 	const calculateTickValues = () => {
@@ -58,124 +57,99 @@ export function EbitdaMarginChart({ data }) {
 		return ticks;
 	};
 
-	// Calculate tick values
-	const tickValues = calculateTickValues();
+	// Value formatter for tooltips and axis labels
+	const valueFormatter = value => `${value.toFixed(1)}%`;
 
 	return (
-		<ResponsiveContainer width="100%" height="100%" aspect={2.5}>
-			<ComposedChart data={chartData} margin={{ top: 30, right: 40, left: 25, bottom: 40 }}>
-				<defs>
-					<linearGradient id="marginGradient" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="5%" stopColor={ChartTheme.colors.secondary[0]} stopOpacity={0.8} />
-						<stop offset="95%" stopColor={ChartTheme.colors.secondary[0]} stopOpacity={0.2} />
-					</linearGradient>
-					<linearGradient id="targetGradient" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-						<stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
-					</linearGradient>
-				</defs>
-
-				{/* Reference area for target zone */}
-				<ReferenceArea
-					y1={targetMargin}
-					y2={Math.max(100, Math.ceil(Math.max(...chartData.map(d => d.margin)) / 10) * 10)}
-					fill="url(#targetGradient)"
-					fillOpacity={0.2}
-					label={{
-						value: "Target Zone",
-						position: "insideTopRight",
-						fill: "#10b981",
-						fontSize: 11
-					}}
-				/>
-
-				<CartesianGrid strokeDasharray="3 3" stroke={ChartTheme.grid.stroke} vertical={false} />
-
-				<XAxis
-					dataKey="year"
-					tick={{ fontSize: 12, fill: "#666" }}
-					tickLine={{ stroke: ChartTheme.axis.tickStroke }}
-					axisLine={{ stroke: ChartTheme.axis.stroke }}
-					padding={{ left: 25, right: 25 }}
-					tickMargin={10}
-					ticks={tickValues}
-					height={50}
-				/>
-
-				<YAxis
-					domain={[0, Math.max(100, Math.ceil(Math.max(...chartData.map(d => d.margin)) / 10) * 10)]}
-					tickFormatter={value => `${value}%`}
-					tick={{ fontSize: 12, fill: "#666" }}
-					tickLine={{ stroke: ChartTheme.axis.tickStroke }}
-					axisLine={{ stroke: ChartTheme.axis.stroke }}
-					width={50}
-					label={{
-						value: "EBITDA Margin (%)",
-						angle: -90,
-						position: "insideLeft",
-						offset: 0,
-						style: {
-							fontSize: 13,
-							fill: "#666",
-							textAnchor: "middle"
+		<Box sx={{ width: "100%", height: 400 }}>
+			<LineChart
+				height={400}
+				series={[
+					{
+						data: marginData,
+						label: "EBITDA Margin",
+						valueFormatter,
+						color: theme.palette.secondary.main,
+						showMark: true,
+						area: true,
+						curve: "monotone",
+						connectNulls: true
+					}
+				]}
+				xAxis={[
+					{
+						data: years,
+						scaleType: "point",
+						tickValues: calculateTickValues(),
+						valueFormatter: value => `Year: ${value}`
+					}
+				]}
+				yAxis={[
+					{
+						min: 0,
+						max: yMax,
+						tickValues: [0, 20, 40, 60, 80, 100],
+						valueFormatter,
+						label: "EBITDA Margin (%)"
+					}
+				]}
+				margin={{ top: 30, right: 40, left: 60, bottom: 40 }}
+				slotProps={{
+					legend: {
+						position: { vertical: "top", horizontal: "middle" },
+						labelStyle: {
+							fontSize: 12,
+							fill: theme.palette.text.primary
 						}
+					}
+				}}>
+				{/* Reference line for average margin */}
+				<ChartsReferenceLine
+					y={avgMargin}
+					label={`Avg: ${avgMargin.toFixed(1)}%`}
+					labelAlign="end"
+					lineStyle={{
+						stroke: theme.palette.primary.main,
+						strokeDasharray: "3 3",
+						strokeWidth: 1.5
 					}}
-					tickMargin={8}
+					labelStyle={{
+						fontSize: 11,
+						fill: theme.palette.primary.main
+					}}
 				/>
 
-				<Tooltip content={<CustomTooltip labelFormatter={labelFormatter} valueFormatter={formatTooltipValue} chartType="line" />} animationDuration={300} cursor={{ strokeDasharray: "3 3" }} />
-
-				<Legend
-					wrapperStyle={{
-						paddingTop: 5,
-						paddingBottom: 10,
-						fontSize: 12,
-						fontWeight: 500
+				{/* Reference line for industry average */}
+				<ChartsReferenceLine
+					y={industryAvg}
+					label={`Industry: ${industryAvg}%`}
+					labelAlign="end"
+					lineStyle={{
+						stroke: theme.palette.warning.main,
+						strokeDasharray: "3 3",
+						strokeWidth: 1.5
 					}}
-					iconType="circle"
-					iconSize={8}
-					verticalAlign="top"
-					align="center"
-					layout="horizontal"
+					labelStyle={{
+						fontSize: 11,
+						fill: theme.palette.warning.main
+					}}
 				/>
 
-				{/* Reference lines */}
-				<ReferenceLine y={avgMargin} stroke={ChartTheme.colors.primary[1]} strokeDasharray="3 3" strokeWidth={1.5}>
-					<Label value={`Avg: ${avgMargin.toFixed(1)}%`} position="right" fill={ChartTheme.colors.primary[1]} fontSize={11} offset={2} />
-				</ReferenceLine>
-
-				<ReferenceLine y={industryAvg} stroke={ChartTheme.colors.warning[0]} strokeDasharray="3 3" strokeWidth={1.5}>
-					<Label value={`Industry: ${industryAvg}%`} position="left" fill={ChartTheme.colors.warning[0]} fontSize={11} offset={2} />
-				</ReferenceLine>
-
-				{/* Area under the line */}
-				<Area type="monotone" dataKey="margin" fill="url(#marginGradient)" fillOpacity={0.3} stroke="none" animationDuration={1500} animationEasing="ease-out" />
-
-				{/* Main line */}
-				<Line
-					type="monotone"
-					dataKey="margin"
-					name="EBITDA Margin"
-					stroke={ChartTheme.colors.secondary[0]}
-					strokeWidth={2.5}
-					dot={{
-						r: 5,
-						strokeWidth: 2,
-						fill: "#fff",
-						stroke: ChartTheme.colors.secondary[0]
+				{/* Target Zone - since ChartsReferenceArea may not be available, use two reference lines */}
+				<ChartsReferenceLine
+					y={targetMargin}
+					label="Target Zone"
+					labelAlign="end"
+					lineStyle={{
+						stroke: theme.palette.success.light,
+						strokeWidth: 1
 					}}
-					activeDot={{
-						r: 7,
-						strokeWidth: 2,
-						fill: "#fff",
-						stroke: ChartTheme.colors.secondary[0],
-						className: "pulse-dot"
+					labelStyle={{
+						fontSize: 11,
+						fill: theme.palette.success.main
 					}}
-					animationDuration={1200}
-					animationEasing="ease-out"
-					connectNulls={true}
 				/>
-			</ComposedChart>
-		</ResponsiveContainer>
+			</LineChart>
+		</Box>
 	);
 }
