@@ -31,6 +31,8 @@ const AVAILABLE_LANGUAGES = {
 			"dashboard.liveData": "Live Data",
 			"dashboard.filterData": "Filter Data",
 			"dashboard.export": "Export",
+			"dashboard.customize": "Dashboard Layout",
+			"dashboard.savedLayouts": "Saved Layouts",
 			// Charts
 			"charts.revenueEbitda.title": "Revenue & EBITDA Projection",
 			"charts.revenueEbitda.description": "Showing exponential growth from 2025-2026 as projects come online",
@@ -85,6 +87,39 @@ const AVAILABLE_LANGUAGES = {
 			"dashboard.filters.country": "Country",
 			"dashboard.filters.capacityRange": "Capacity Range",
 			"dashboard.filters.apply": "Apply Filters",
+			// KPIs
+			"kpi.totalCapacity": "Portfolio Capacity",
+			"kpi.averageIrr": "Average IRR",
+			"kpi.totalInvestment": "Total Investment",
+			"kpi.annualEbitda": "Annual EBITDA",
+			// Footer
+			"footer.quickLinks": "Quick Links",
+			"footer.legalInfo": "Legal Info",
+			"footer.privacyPolicy": "Privacy Policy",
+			"footer.termsOfService": "Terms of Service",
+			"footer.allRightsReserved": "All Rights Reserved",
+			"footer.poweredBy": "Powered by",
+			// Company
+			"company.name": "ZEN Energy Group",
+			"company.description": "Financial Performance Dashboard",
+			"company.address": "123 Financial Street, Business District",
+			// Dashboard Customizer
+			"customizer.layout": "Layout",
+			"customizer.savedLayouts": "Saved Layouts",
+			"customizer.reset": "Reset",
+			"customizer.order": "Order",
+			"customizer.chart": "Chart",
+			"customizer.size": "Size",
+			"customizer.visibility": "Visibility",
+			"customizer.lock": "Lock",
+			"customizer.saveLayout": "Save This Layout",
+			"customizer.enterLayoutName": "Enter layout name",
+			"customizer.save": "Save",
+			"customizer.load": "Load",
+			"customizer.noSavedLayouts": "No saved layouts yet. Customize your dashboard and save layouts to see them here.",
+			"customizer.visibleCharts": "visible charts",
+			"customizer.cancel": "Cancel",
+			"customizer.applyChanges": "Apply Changes",
 			// Common
 			"common.cancel": "Cancel"
 		}
@@ -117,6 +152,8 @@ const AVAILABLE_LANGUAGES = {
 			"dashboard.liveData": "Datos en vivo",
 			"dashboard.filterData": "Filtrar datos",
 			"dashboard.export": "Exportar",
+			"dashboard.customize": "Diseño del Panel",
+			"dashboard.savedLayouts": "Diseños Guardados",
 			// Charts
 			"charts.revenueEbitda.title": "Proyección de Ingresos y EBITDA",
 			"charts.revenueEbitda.description": "Muestra un crecimiento exponencial de 2025 a 2026 cuando los proyectos entran en línea",
@@ -171,6 +208,39 @@ const AVAILABLE_LANGUAGES = {
 			"dashboard.filters.country": "País",
 			"dashboard.filters.capacityRange": "Rango de Capacidad",
 			"dashboard.filters.apply": "Aplicar Filtros",
+			// KPIs
+			"kpi.totalCapacity": "Capacidad de Cartera",
+			"kpi.averageIrr": "TIR Promedio",
+			"kpi.totalInvestment": "Inversión Total",
+			"kpi.annualEbitda": "EBITDA Anual",
+			// Footer
+			"footer.quickLinks": "Enlaces Rápidos",
+			"footer.legalInfo": "Información Legal",
+			"footer.privacyPolicy": "Política de Privacidad",
+			"footer.termsOfService": "Términos de Servicio",
+			"footer.allRightsReserved": "Todos los Derechos Reservados",
+			"footer.poweredBy": "Desarrollado por",
+			// Company
+			"company.name": "Grupo ZEN Energy",
+			"company.description": "Panel de Rendimiento Financiero",
+			"company.address": "123 Calle Financiera, Distrito de Negocios",
+			// Dashboard Customizer
+			"customizer.layout": "Diseño",
+			"customizer.savedLayouts": "Diseños Guardados",
+			"customizer.reset": "Restablecer",
+			"customizer.order": "Orden",
+			"customizer.chart": "Gráfico",
+			"customizer.size": "Tamaño",
+			"customizer.visibility": "Visibilidad",
+			"customizer.lock": "Bloquear",
+			"customizer.saveLayout": "Guardar Este Diseño",
+			"customizer.enterLayoutName": "Ingrese nombre del diseño",
+			"customizer.save": "Guardar",
+			"customizer.load": "Cargar",
+			"customizer.noSavedLayouts": "Aún no hay diseños guardados. Personalice su panel y guarde diseños para verlos aquí.",
+			"customizer.visibleCharts": "gráficos visibles",
+			"customizer.cancel": "Cancelar",
+			"customizer.applyChanges": "Aplicar Cambios",
 			// Common
 			"common.cancel": "Cancelar"
 		}

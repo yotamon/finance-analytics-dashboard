@@ -7,56 +7,56 @@ import Button from "../ui/Button";
 const AVAILABLE_CHARTS = [
 	{
 		id: "revenue-ebitda",
-		name: "Revenue vs EBITDA",
-		description: "Comparison of revenue and EBITDA by project",
+		name: "charts.revenueEbitda.title",
+		description: "charts.revenueEbitda.description",
 		defaultSize: "lg",
 		defaultOrder: 1,
 		defaultVisible: true
 	},
 	{
 		id: "project-portfolio",
-		name: "Project Portfolio",
-		description: "Breakdown of projects by type and status",
+		name: "charts.portfolioOverview.title",
+		description: "charts.portfolioOverview.description",
 		defaultSize: "md",
 		defaultOrder: 2,
 		defaultVisible: true
 	},
 	{
 		id: "project-type",
-		name: "Project Types",
-		description: "Distribution of projects by type",
+		name: "charts.projectType.title",
+		description: "charts.projectType.description",
 		defaultSize: "sm",
 		defaultOrder: 3,
 		defaultVisible: true
 	},
 	{
 		id: "investment-returns",
-		name: "Investment Returns",
-		description: "Investment vs returns by project",
+		name: "charts.investmentReturns.title",
+		description: "charts.investmentReturns.description",
 		defaultSize: "md",
 		defaultOrder: 4,
 		defaultVisible: true
 	},
 	{
 		id: "ebitda-margin",
-		name: "EBITDA Margin",
-		description: "EBITDA margin percentage by project",
+		name: "charts.ebitdaMargin.title",
+		description: "charts.ebitdaMargin.description",
 		defaultSize: "sm",
 		defaultOrder: 5,
 		defaultVisible: true
 	},
 	{
 		id: "country-comparison",
-		name: "Country Comparison",
-		description: "Metrics comparison by country",
+		name: "charts.countryComparison.title",
+		description: "charts.countryComparison.description",
 		defaultSize: "md",
 		defaultOrder: 6,
 		defaultVisible: true
 	},
 	{
 		id: "geographic-map",
-		name: "Geographic Map",
-		description: "Project locations on an interactive map",
+		name: "charts.geographicDistribution.title",
+		description: "charts.geographicDistribution.description",
 		defaultSize: "lg",
 		defaultOrder: 7,
 		defaultVisible: true
@@ -238,7 +238,7 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 						}`}
 						onClick={() => setActiveTab("layout")}>
 						<LayoutGrid size={16} className="inline mr-1" />
-						Layout
+						{t("customizer.layout")}
 					</button>
 					<button
 						className={`px-4 py-2 text-sm font-medium ${
@@ -246,7 +246,7 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 						}`}
 						onClick={() => setActiveTab("saved")}>
 						<Save size={16} className="inline mr-1" />
-						Saved Layouts
+						{t("customizer.savedLayouts")}
 					</button>
 				</div>
 
@@ -258,7 +258,7 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 								<div className="space-x-2">
 									<Button variant="secondary" outlined size="sm" onClick={resetToDefaults}>
 										<RefreshCw size={14} className="mr-1" />
-										Reset
+										{t("customizer.reset")}
 									</Button>
 								</div>
 							</div>
@@ -268,19 +268,19 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 									<thead className="bg-gray-50 dark:bg-gray-800">
 										<tr>
 											<th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-												Order
+												{t("customizer.order")}
 											</th>
 											<th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-												Chart
+												{t("customizer.chart")}
 											</th>
 											<th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-												Size
+												{t("customizer.size")}
 											</th>
 											<th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-												Visibility
+												{t("customizer.visibility")}
 											</th>
 											<th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
-												Lock
+												{t("customizer.lock")}
 											</th>
 										</tr>
 									</thead>
@@ -322,8 +322,8 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 														<div className="flex items-center">
 															<Grip size={16} className="mr-2 text-gray-400" />
 															<div>
-																<div className="text-sm font-medium text-gray-900 dark:text-gray-100">{chart.name}</div>
-																<div className="text-xs text-gray-500 dark:text-gray-400">{chart.description}</div>
+																<div className="text-sm font-medium text-gray-900 dark:text-gray-100">{t(chart.name)}</div>
+																<div className="text-xs text-gray-500 dark:text-gray-400">{t(chart.description)}</div>
 															</div>
 														</div>
 													</td>
@@ -362,18 +362,18 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 							</div>
 
 							<div className="mt-4 p-3 bg-blue-50 rounded-md dark:bg-blue-900/20">
-								<h4 className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Save This Layout</h4>
+								<h4 className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">{t("customizer.saveLayout")}</h4>
 								<div className="flex items-center space-x-2">
 									<input
 										type="text"
 										value={layoutName}
 										onChange={e => setLayoutName(e.target.value)}
-										placeholder="Enter layout name"
+										placeholder={t("customizer.enterLayoutName")}
 										className="flex-1 p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
 									/>
 									<Button onClick={saveLayout} variant="primary" size="sm" disabled={!layoutName}>
 										<Save size={14} className="mr-1" />
-										Save
+										{t("customizer.save")}
 									</Button>
 								</div>
 							</div>
@@ -387,7 +387,7 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 							{savedLayouts.length === 0 ? (
 								<div className="p-8 text-center text-gray-500 bg-gray-50 rounded-md dark:bg-gray-800 dark:text-gray-400">
 									<LayoutGrid size={32} className="mx-auto mb-2 opacity-30" />
-									<p>No saved layouts yet. Customize your dashboard and save layouts to see them here.</p>
+									<p>{t("customizer.noSavedLayouts")}</p>
 								</div>
 							) : (
 								<div className="space-y-3">
@@ -396,12 +396,12 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 											<div>
 												<div className="font-medium">{layout.name}</div>
 												<div className="text-xs text-gray-500">
-													{new Date(layout.created).toLocaleDateString()} ·{layout.charts.filter(c => c.visible).length} visible charts
+													{new Date(layout.created).toLocaleDateString()} · {layout.charts.filter(c => c.visible).length} {t("customizer.visibleCharts")}
 												</div>
 											</div>
 											<div className="flex space-x-2">
 												<Button onClick={() => loadLayout(layout)} variant="secondary" size="sm">
-													Load
+													{t("customizer.load")}
 												</Button>
 												<Button onClick={() => deleteLayout(layout.id)} variant="danger" outlined size="sm">
 													<X size={14} />
@@ -418,10 +418,10 @@ export default function DashboardCustomizer({ isVisible, onClose, onSave }) {
 				<div className="flex items-center justify-end p-4 border-t dark:border-gray-700">
 					<div className="space-x-2">
 						<Button onClick={onClose} variant="secondary">
-							Cancel
+							{t("customizer.cancel")}
 						</Button>
 						<Button onClick={applyChanges} variant="primary">
-							Apply Changes
+							{t("customizer.applyChanges")}
 						</Button>
 					</div>
 				</div>

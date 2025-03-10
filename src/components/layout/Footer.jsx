@@ -10,7 +10,7 @@ function Footer() {
 	const { isDark } = useTheme();
 	const muiTheme = useMuiTheme();
 
-	const companyName = getConfig("company.name", "ZEN Energy Group");
+	const companyName = t("company.name");
 	const currentYear = new Date().getFullYear();
 
 	// Function to get content from configuration with fallbacks
@@ -36,10 +36,10 @@ function Footer() {
 							{companyName}
 						</Typography>
 						<Typography variant="body2" color="text.secondary" paragraph>
-							{getContent("company.description", "Financial Performance Dashboard")}
+							{t("company.description")}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
-							{getContent("company.address", "123 Financial Street, Business District")}
+							{t("company.address")}
 						</Typography>
 					</Grid>
 
