@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Responsive as ResponsiveGridLayout, WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -66,17 +66,22 @@ const customStyles = {
     overflow: "visible",
     marginBottom: "30px", // Add margin to bottom of container
 
-    // Add styles for react-resizable handles
+    // Add styles for react-resizable handles with better specificity
     "& .react-resizable-handle": {
       position: "absolute",
       width: "20px",
       height: "20px",
-      bottom: "0",
-      right: "0",
       padding: "0 3px 3px 0",
       zIndex: 2,
       opacity: 0,
-      transition: "opacity 0.3s ease",
+      transition: "opacity 0.2s ease",
+      willChange: "transform",
+      borderRadius: "50%",
+      // Add a background color to make the handles easier to see and click
+      background: "rgba(25, 118, 210, 0.1)",
+    },
+    "& .react-grid-item:hover .react-resizable-handle": {
+      opacity: 0.8,
     },
     "& .react-resizable-handle-se": {
       bottom: "0",
@@ -98,8 +103,22 @@ const customStyles = {
       left: "0",
       cursor: "nw-resize",
     },
-    "& .react-grid-item:hover .react-resizable-handle": {
-      opacity: 0.8,
+    // Add critical styles to ensure the DraggableCore doesn't lose its target
+    "& .react-grid-item": {
+      transition: "transform 0.2s ease, width 0.2s ease, height 0.2s ease",
+      willChange: "transform, width, height",
+    },
+    "& .react-grid-item.resizing, & .react-grid-item.react-draggable-dragging": {
+      transition: "none",
+      zIndex: 3,
+    },
+    "& .react-grid-item.resizing .react-resizable-handle, & .react-grid-item.react-draggable-dragging .react-resizable-handle":
+      {
+        opacity: 1,
+      },
+    // Add style to ensure the grid item stays in place during drag
+    "& .react-grid-item.dragging": {
+      zIndex: 2,
     },
   },
   chartPaper: {
@@ -222,8 +241,14 @@ import CashFlowSankey from "../charts/CashFlowSankey";
 import MetricsHeatMap from "../charts/MetricsHeatMap";
 import CorrelationMatrix from "../charts/CorrelationMatrix";
 
-// Create a width-aware grid layout
-const ResponsiveGridLayoutWithWidth = WidthProvider(ResponsiveGridLayout);
+// Wrap ResponsiveGridLayout with WidthProvider using useMemo to optimize performance
+// This is a specific recommendation from the react-grid-layout docs
+const ResponsiveGridLayoutWithWidth = React.memo((props) => {
+  // Create the WidthProvider wrapper using useMemo to prevent re-renders
+  const WidthProvidedLayout = useMemo(() => WidthProvider(ResponsiveGridLayout), []);
+
+  return <WidthProvidedLayout {...props} />;
+});
 
 // Chart Registry - Map chart types to their components
 const CHART_COMPONENTS = {
@@ -334,77 +359,155 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-// Define a custom ResizeHandle component for better cursor tracking
-const CustomResizeHandle = React.forwardRef(function CustomResizeHandle(props, ref) {
-  const { handleAxis, ...restProps } = props;
+// Define a custom ResizeHandle component with proper ref forwarding
+const CustomResizeHandle = React.memo(
+  React.forwardRef(function CustomResizeHandle(props, ref) {
+    const { handleAxis, onMouseDown, onMouseUp, onTouchEnd, style, className, ...restProps } =
+      props;
 
-  // Default to 'se' if handleAxis is not provided
-  const axis = handleAxis || "se";
+    // Default to 'se' if handleAxis is not provided
+    const axis = handleAxis || "se";
 
-  // Improve cursor tracking by adding specific styles per axis
-  const getAxisSpecificStyles = () => {
-    switch (axis) {
-      case "se":
-        return {
-          bottom: "-8px",
-          right: "-8px",
-          cursor: "se-resize",
-          backgroundColor: "rgba(25, 118, 210, 0.2)",
-          borderColor: "rgba(25, 118, 210, 0.7)",
-        };
-      case "sw":
-        return {
-          bottom: "-8px",
-          left: "-8px",
-          cursor: "sw-resize",
-          backgroundColor: "rgba(25, 118, 210, 0.2)",
-          borderColor: "rgba(25, 118, 210, 0.7)",
-        };
-      case "ne":
-        return {
-          top: "-8px",
-          right: "-8px",
-          cursor: "ne-resize",
-          backgroundColor: "rgba(25, 118, 210, 0.2)",
-          borderColor: "rgba(25, 118, 210, 0.7)",
-        };
-      case "nw":
-        return {
-          top: "-8px",
-          left: "-8px",
-          cursor: "nw-resize",
-          backgroundColor: "rgba(25, 118, 210, 0.2)",
-          borderColor: "rgba(25, 118, 210, 0.7)",
-        };
-      default:
-        return {};
-    }
-  };
+    // Improve cursor tracking by adding specific styles per axis
+    const getAxisSpecificStyles = () => {
+      switch (axis) {
+        case "se":
+          return {
+            bottom: "-8px",
+            right: "-8px",
+            cursor: "se-resize",
+            backgroundColor: "rgba(25, 118, 210, 0.2)",
+            borderColor: "rgba(25, 118, 210, 0.7)",
+          };
+        case "sw":
+          return {
+            bottom: "-8px",
+            left: "-8px",
+            cursor: "sw-resize",
+            backgroundColor: "rgba(25, 118, 210, 0.2)",
+            borderColor: "rgba(25, 118, 210, 0.7)",
+          };
+        case "ne":
+          return {
+            top: "-8px",
+            right: "-8px",
+            cursor: "ne-resize",
+            backgroundColor: "rgba(25, 118, 210, 0.2)",
+            borderColor: "rgba(25, 118, 210, 0.7)",
+          };
+        case "nw":
+          return {
+            top: "-8px",
+            left: "-8px",
+            cursor: "nw-resize",
+            backgroundColor: "rgba(25, 118, 210, 0.2)",
+            borderColor: "rgba(25, 118, 210, 0.7)",
+          };
+        default:
+          return {};
+      }
+    };
+
+    // IMPORTANT: Forward required props to the DOM element for react-draggable to work
+    return (
+      <div
+        ref={ref}
+        className={`react-resizable-handle react-resizable-handle-${axis} ${className || ""}`}
+        style={{
+          position: "absolute",
+          width: "24px",
+          height: "24px",
+          background: "transparent",
+          border: "2px solid transparent",
+          borderRadius: "50%",
+          zIndex: 10,
+          userSelect: "none",
+          touchAction: "none",
+          ...getAxisSpecificStyles(),
+          ...(style || {}),
+        }}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        onTouchEnd={onTouchEnd}
+        {...restProps}
+      />
+    );
+  })
+);
+
+// Make sure CustomResizeHandle has a displayName for debugging
+CustomResizeHandle.displayName = "CustomResizeHandle";
+
+// Add PropTypes for better validation
+CustomResizeHandle.propTypes = {
+  handleAxis: PropTypes.string,
+  style: PropTypes.object,
+  className: PropTypes.string,
+  onMouseDown: PropTypes.func,
+  onMouseUp: PropTypes.func,
+  onTouchEnd: PropTypes.func,
+};
+
+// Improved GridItemWrapper with proper event handling
+const GridItemWrapper = React.forwardRef(function GridItemWrapper(props, ref) {
+  const { children, style, className, onMouseDown, onMouseUp, onTouchEnd, sx, ...otherProps } =
+    props;
+
+  // Handle mouse events to prevent unmounting during drag
+  const handleMouseDown = useCallback(
+    (e) => {
+      // First call the original handler
+      if (onMouseDown) onMouseDown(e);
+
+      // Mark the element as being interacted with
+      if (ref && ref.current) {
+        ref.current.setAttribute("data-interacting", "true");
+      }
+    },
+    [onMouseDown, ref]
+  );
+
+  const handleMouseUp = useCallback(
+    (e) => {
+      // First call the original handler
+      if (onMouseUp) onMouseUp(e);
+
+      // Remove the interaction marker
+      if (ref && ref.current) {
+        ref.current.removeAttribute("data-interacting");
+      }
+    },
+    [onMouseUp, ref]
+  );
 
   return (
-    <div
+    <Paper
       ref={ref}
-      className={`react-resizable-handle react-resizable-handle-${axis}`}
-      style={{
-        position: "absolute",
-        width: "24px",
-        height: "24px",
-        background: "transparent",
-        border: "2px solid transparent",
-        borderRadius: "50%",
-        zIndex: 10,
-        userSelect: "none",
-        touchAction: "none",
-        ...getAxisSpecificStyles(),
-      }}
-      {...restProps}
-    />
+      style={style}
+      className={className}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onTouchEnd={onTouchEnd}
+      elevation={2}
+      sx={sx}
+      {...otherProps}
+    >
+      {children}
+    </Paper>
   );
 });
 
-// Add PropTypes for CustomResizeHandle
-CustomResizeHandle.propTypes = {
-  handleAxis: PropTypes.string,
+GridItemWrapper.displayName = "GridItemWrapper";
+
+// Add PropTypes for GridItemWrapper
+GridItemWrapper.propTypes = {
+  children: PropTypes.node,
+  style: PropTypes.object,
+  className: PropTypes.string,
+  onMouseDown: PropTypes.func,
+  onMouseUp: PropTypes.func,
+  onTouchEnd: PropTypes.func,
+  sx: PropTypes.object,
 };
 
 export default function DraggableDashboard({
@@ -417,7 +520,7 @@ export default function DraggableDashboard({
 }) {
   const theme = useTheme();
   const { t } = useI18n();
-  const location = useLocation(); // Get current route location
+  const location = useLocation();
 
   // Initialize with savedLayouts if provided, otherwise use defaults
   // Use useState with callback to ensure proper initial state
@@ -460,7 +563,38 @@ export default function DraggableDashboard({
     attemptCount: 0,
     isFullyReady: false,
     isMounted: false,
+    activeDragElement: null,
+    activeResizeElement: null,
+    lastDragNode: null,
   });
+
+  // Global handler to cancel operations if components unmount during drag/resize
+  useEffect(() => {
+    // Function to handle any mouse up event which might indicate end of drag/resize
+    const handleGlobalMouseUp = () => {
+      // If we were resizing but the resize handle is gone from DOM, end resizing
+      if (isResizing) {
+        const activeResizeHandles = document.querySelectorAll(
+          ".react-resizable-handle.react-draggable-dragging"
+        );
+        if (activeResizeHandles.length === 0) {
+          console.log("Detected potential unmount during resize - cleaning up");
+          setIsResizing(false);
+          setCurrentResize(null);
+          // Force a layout update by triggering resize event
+          window.dispatchEvent(new Event("resize"));
+        }
+      }
+    };
+
+    // Add listeners
+    document.addEventListener("mouseup", handleGlobalMouseUp);
+
+    // Clean up
+    return () => {
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [isResizing]);
 
   // Add a dedicated function to reset the isResizing state safely
   const resetResizingState = useCallback(() => {
@@ -611,93 +745,103 @@ export default function DraggableDashboard({
     setActiveMenu(null);
   }, []);
 
-  // Handle resize event
-  const onResize = useCallback((layout, oldItem, newItem) => {
-    // Enhanced cursor tracking during resize
-    console.log(
-      `Resizing chart ${newItem.i} from ${oldItem.w}x${oldItem.h} to ${newItem.w}x${newItem.h}`
-    );
-
-    // Mark that we're currently resizing
-    setIsResizing(true);
-
-    // Store the current resize dimensions for smoother updates
-    setCurrentResize({
-      chartId: newItem.i,
-      w: newItem.w,
-      h: newItem.h,
-    });
-
-    // Find the element being resized and enhance visual feedback
-    const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
-    if (el) {
-      el.style.zIndex = "1000";
-      // Force immediate visual updates
-      el.style.transition = "none";
-      // Ensure consistent transform origin
-      el.style.transformOrigin = "center center";
-    }
-
-    // Important: Don't update the layout during active resize to prevent jumping
-  }, []);
-
-  // Handle when resize stops
-  const onResizeStop = useCallback(
-    (layout, oldItem, newItem) => {
-      console.log(
-        `Resize complete for ${newItem.i} from ${oldItem.w}x${oldItem.h} to ${newItem.w}x${newItem.h}`
-      );
-
-      // Remove actively-resizing class and reset styles
-      const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
-      if (el) {
-        el.classList.remove("actively-resizing");
-        el.style.zIndex = "";
-        el.style.transition = "";
+  // Handle resize event with optimized performance for better responsiveness
+  const onResize = useCallback(
+    (layout, oldItem, newItem, placeholder, e, element) => {
+      // Skip processing if element doesn't exist in DOM
+      if (!element || !document.body.contains(element)) {
+        return;
       }
 
-      // Create a deep copy of the current layouts
+      // Find the element being resized for direct DOM manipulation
+      // This provides immediate visual feedback without state updates
+      const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
+      if (el) {
+        el.style.zIndex = "1000";
+        el.style.transition = "none"; // Disable transitions during resize
+        el.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.1)";
+      }
+
+      // Throttle state updates for better performance during rapid resize
+      if (!currentResize || Date.now() - (currentResize.timestamp || 0) > 60) {
+        setCurrentResize({
+          chartId: newItem.i,
+          w: newItem.w,
+          h: newItem.h,
+          timestamp: Date.now(),
+        });
+      }
+    },
+    [currentResize]
+  );
+
+  // Handle resize start with proper DOM checks
+  const onResizeStart = useCallback((layout, oldItem, newItem, placeholder, e, element) => {
+    // Safety checks
+    if (!element || !document.body.contains(element)) {
+      if (e && e.preventDefault) e.preventDefault();
+      return false;
+    }
+
+    // Mark element as being resized
+    const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
+    if (el) {
+      el.classList.add("actively-resizing", "resizing");
+    }
+
+    setIsResizing(true);
+    return true;
+  }, []);
+
+  // Handle resize stop with proper cleanup
+  const onResizeStop = useCallback(
+    (layout, oldItem, newItem, placeholder, e, element) => {
+      // Find the element and clean up styling
+      const el = document.querySelector(`[data-grid-id="${newItem.i}"]`);
+      if (el) {
+        el.classList.remove("actively-resizing", "resizing");
+
+        // Use requestAnimationFrame for smooth transition back
+        requestAnimationFrame(() => {
+          el.style.boxShadow = "";
+          el.style.zIndex = "";
+          el.style.transition = "all 0.15s ease-out";
+        });
+      }
+
+      // Update layouts
       const newLayouts = JSON.parse(JSON.stringify(layouts));
       const currentBreakpoint = getCurrentBreakpoint();
 
-      // Find and update the item that was resized
       if (newLayouts[currentBreakpoint]) {
         const itemIndex = newLayouts[currentBreakpoint].findIndex((item) => item.i === newItem.i);
 
         if (itemIndex !== -1) {
-          // Update the width and height with precise values
+          // Update width and height
           newLayouts[currentBreakpoint][itemIndex] = {
             ...newLayouts[currentBreakpoint][itemIndex],
             w: newItem.w,
             h: newItem.h,
-            // Ensure minW is not larger than the new width
             minW: Math.min(newLayouts[currentBreakpoint][itemIndex].minW || 1, newItem.w),
           };
 
-          // Update layouts with a single state update
           setLayouts(newLayouts);
 
-          // Call onLayoutChange if provided, but after a short delay
-          // to ensure DOM has settled
+          // Notify parent if callback provided
           if (onLayoutChange) {
-            setTimeout(() => {
-              onLayoutChange(newLayouts);
-            }, 50);
+            setTimeout(() => onLayoutChange(newLayouts), 50);
           }
         }
       }
 
-      // Clear resize state
+      // Reset state
       setCurrentResize(null);
+      setIsResizing(false);
 
-      // Allow a short delay before clearing the resizing flag
-      // This helps prevent layout jumps during the transition
-      setTimeout(() => {
-        setIsResizing(false);
-
-        // Force window resize to ensure charts redraw properly
+      // Force redraw of charts
+      requestAnimationFrame(() => {
         window.dispatchEvent(new Event("resize"));
-      }, 100);
+      });
     },
     [layouts, getCurrentBreakpoint, onLayoutChange]
   );
@@ -765,7 +909,7 @@ export default function DraggableDashboard({
     [isDashboardReady, layouts, onLayoutChange, getCurrentBreakpoint]
   );
 
-  // Modified draggable handlers with strict safety checks
+  // Fix onDragStart to handle component unmounting issues
   const onDragStart = useCallback(
     (layout, oldItem, newItem, placeholder, e, element) => {
       // Comprehensive safety check
@@ -778,21 +922,9 @@ export default function DraggableDashboard({
         return false;
       }
 
-      // Continue only when we're 100% sure it's safe
-      if (element) {
-        element.classList.add("dragging");
-      }
-      setIsResizing(true);
-      return true;
-    },
-    [isDashboardReady]
-  );
-
-  const onResizeStart = useCallback(
-    (layout, oldItem, newItem, placeholder, e, element) => {
-      // Comprehensive safety check
-      if (!isDashboardReady || !gridStabilityRef.current.isFullyReady) {
-        console.log("Preventing resize: Dashboard not fully ready");
+      // Critical check: Verify the element exists and is in the DOM
+      if (!element || !document.body.contains(element)) {
+        console.log("Preventing drag: Element not in DOM");
         if (e) {
           if (e.preventDefault) e.preventDefault();
           if (e.stopPropagation) e.stopPropagation();
@@ -800,30 +932,64 @@ export default function DraggableDashboard({
         return false;
       }
 
-      setIsResizing(true);
+      // Track the actively dragging element to prevent unmounting during drag
+      gridStabilityRef.current.activeDragElement = element;
 
-      // Ensure minW constraints are valid
-      const currentBreakpoint = getCurrentBreakpoint();
-      if (layouts[currentBreakpoint]) {
-        const item = layouts[currentBreakpoint].find((i) => i.i === oldItem.i);
-        if (item) {
-          // Ensure minW is never larger than w
-          item.minW = Math.min(item.minW || 1, item.w);
-
-          // Add resize indicator class for visual feedback
-          const el = document.querySelector(`[data-grid-id="${oldItem.i}"]`);
-          if (el) {
-            el.classList.add("actively-resizing");
-          }
-        }
+      // Add a marker class to the element for tracking
+      if (element) {
+        element.classList.add("dragging");
+        // Use data attribute to mark the specific chart being dragged
+        element.setAttribute("data-dragging-id", oldItem.i);
       }
 
+      setIsResizing(true);
       return true;
     },
-    [isDashboardReady, layouts, getCurrentBreakpoint]
+    [isDashboardReady]
   );
 
-  // Establish the dashboard ready state with multiple checks and a safe delay
+  // Add cleanup effect specifically for drag operations
+  useEffect(() => {
+    // Function to clean up any abandoned drag operations
+    const cleanup = () => {
+      // Find all elements with drag-related classes
+      document
+        .querySelectorAll(
+          ".react-draggable-dragging, .resizing, .dragging, .being-resized, .actively-resizing"
+        )
+        .forEach((el) => {
+          el.classList.remove("react-draggable-dragging");
+          el.classList.remove("resizing");
+          el.classList.remove("dragging");
+          el.classList.remove("being-resized");
+          el.classList.remove("actively-resizing");
+          el.removeAttribute("data-resize-id");
+          el.removeAttribute("data-dragging-id");
+          el.removeAttribute("data-resize-active");
+
+          // Reset any inline styles that might interfere with normal rendering
+          el.style.transform = "";
+          el.style.transition = "";
+          el.style.zIndex = "";
+        });
+
+      // Clear any resize state
+      setIsResizing(false);
+      setCurrentResize(null);
+    };
+
+    // Set up event listener for page visibility changes
+    // This helps recover from errors when the user switches tabs/windows
+    document.addEventListener("visibilitychange", cleanup);
+
+    // Clean up on unmount
+    return () => {
+      document.removeEventListener("visibilitychange", cleanup);
+      cleanup();
+    };
+  }, []);
+
+  // Enhanced gridStabilityRef to track more state
   useEffect(() => {
     // Reset readiness when route or key props change
     setIsDashboardReady(false);
@@ -831,6 +997,9 @@ export default function DraggableDashboard({
       attemptCount: 0,
       isFullyReady: false,
       isMounted: false,
+      activeDragElement: null,
+      activeResizeElement: null,
+      lastDragNode: null,
     };
 
     let isMounted = true;
@@ -850,7 +1019,7 @@ export default function DraggableDashboard({
         window.dispatchEvent(new Event("resize"));
         gridStabilityRef.current.attemptCount++;
       }
-    }, 500);
+    }, 400);
 
     // Step 3: Mark the dashboard as fully ready only after everything else is stable
     const readyTimer = setTimeout(() => {
@@ -859,7 +1028,7 @@ export default function DraggableDashboard({
         gridStabilityRef.current.isFullyReady = true;
         console.log("Dashboard is now fully ready for interactions");
       }
-    }, 1000);
+    }, 800);
 
     return () => {
       isMounted = false;
@@ -872,7 +1041,29 @@ export default function DraggableDashboard({
         attemptCount: 0,
         isFullyReady: false,
         isMounted: false,
+        activeDragElement: null,
+        activeResizeElement: null,
+        lastDragNode: null,
       };
+
+      // Cancel any ongoing resize/drag operations when unmounting
+      setIsResizing(false);
+      setCurrentResize(null);
+
+      // Find and clean up any actively resizing elements
+      document
+        .querySelectorAll(
+          ".react-draggable-dragging, .resizing, .dragging, .being-resized, .actively-resizing"
+        )
+        .forEach((el) => {
+          el.classList.remove("react-draggable-dragging");
+          el.classList.remove("resizing");
+          el.classList.remove("dragging");
+          el.classList.remove("being-resized");
+          el.classList.remove("actively-resizing");
+          el.style.cursor = "";
+          el.style.zIndex = "";
+        });
     };
   }, [location.pathname]); // Reset readiness when route changes
 
@@ -1187,12 +1378,65 @@ export default function DraggableDashboard({
     setMaximizedChart(maximizedChart === chartId ? null : chartId);
   };
 
-  // Memoize the grid children to improve performance, as recommended in react-grid-layout docs
-  const gridChildren = React.useMemo(() => {
+  // Inside the component, implement a memoized resize handle component
+  const resizeHandleComponent = useCallback(
+    (handleAxis) => <CustomResizeHandle handleAxis={handleAxis} />,
+    []
+  );
+
+  // Cleanup function to reset any lingering resize/drag states
+  const cleanupResizeStates = useCallback(() => {
+    document
+      .querySelectorAll(
+        ".react-draggable-dragging, .react-resizable-resizing, .actively-resizing, .dragging, .being-resized"
+      )
+      .forEach((el) => {
+        el.classList.remove("react-draggable-dragging");
+        el.classList.remove("react-resizable-resizing");
+        el.classList.remove("actively-resizing");
+        el.classList.remove("dragging");
+        el.classList.remove("being-resized");
+        el.style.zIndex = "";
+        el.style.transition = "";
+      });
+
+    setIsResizing(false);
+    setCurrentResize(null);
+  }, []);
+
+  // Add an effect to clean up on unmount or when visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        cleanupResizeStates();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      cleanupResizeStates();
+    };
+  }, [cleanupResizeStates]);
+
+  // Use useMemo for draggableOpts to avoid changing reference
+  const draggableOpts = useMemo(
+    () => ({
+      cancel: ".MuiCardContent-root,.MuiIconButton-root",
+      grid: [1, 1],
+      offsetParent: document.body,
+      scale: 1,
+      enableUserSelectHack: true,
+    }),
+    []
+  );
+
+  // Use useMemo for grid children to prevent unnecessary re-renders
+  const gridChildren = useMemo(() => {
     return activeCharts.map((chartId) => (
-      <Paper
+      <GridItemWrapper
         key={chartId}
-        elevation={1}
         className={currentResize?.chartId === chartId ? "actively-resizing" : ""}
         sx={{
           display: "flex",
@@ -1319,7 +1563,7 @@ export default function DraggableDashboard({
         >
           {renderChart(chartId, { financialData, projectData, countryData })}
         </CardContent>
-      </Paper>
+      </GridItemWrapper>
     ));
   }, [
     activeCharts,
@@ -1337,6 +1581,7 @@ export default function DraggableDashboard({
     CHART_ICONS,
     currentResize,
     isResizing,
+    renderChart,
   ]);
 
   // Handle layout changes
@@ -1381,14 +1626,33 @@ export default function DraggableDashboard({
     }
   };
 
-  // Inside the component render section, update the resizeHandle prop:
-  const resizeHandleComponent = useCallback(
-    (resizeHandleAxis) => <CustomResizeHandle handleAxis={resizeHandleAxis} />,
-    []
-  );
+  // Reset all active drag/resize operations when unmounting
+  useEffect(() => {
+    return () => {
+      // Cleanup any active drag operations on unmount
+      const activeElements = document.querySelectorAll(
+        ".react-draggable-dragging, .react-resizable-resizing, .actively-resizing, .dragging"
+      );
+
+      activeElements.forEach((el) => {
+        el.classList.remove("react-draggable-dragging");
+        el.classList.remove("react-resizable-resizing");
+        el.classList.remove("actively-resizing");
+        el.classList.remove("dragging");
+      });
+    };
+  }, []);
 
   return (
-    <Box sx={{ height: "100%", position: "relative" }} ref={containerRef}>
+    <Box
+      ref={containerRef}
+      sx={{
+        position: "relative",
+        height: "100%",
+        mt: 1,
+        zIndex: 0,
+      }}
+    >
       {maximizedChart ? (
         <MaximizedChart
           chartId={maximizedChart}
@@ -1397,7 +1661,6 @@ export default function DraggableDashboard({
         />
       ) : mounted ? (
         <>
-          {/* Dashboard Controls */}
           {editMode && (
             <Box
               sx={{
@@ -1425,7 +1688,6 @@ export default function DraggableDashboard({
             </Box>
           )}
 
-          {/* Edit Mode Indicator */}
           {editMode && (
             <Box
               sx={{
@@ -1462,47 +1724,26 @@ export default function DraggableDashboard({
             rowHeight={90}
             draggableHandle=".drag-handle"
             resizeHandle={editMode ? resizeHandleComponent : null}
-            resizeHandles={["se", "sw", "ne", "nw"]} // Enable all corner handles for more flexibility
+            resizeHandles={["se", "sw", "ne", "nw"]}
             isDraggable={editMode && isDashboardReady}
             isResizable={editMode && isDashboardReady}
-            // Smaller margins for better positioning accuracy
             margin={[8, 8]}
             containerPadding={[8, 8]}
-            // Disable measurement before mount to avoid positioning issues
             measureBeforeMount={false}
-            // Always use CSS transforms for better performance and positioning
             useCSSTransforms={isDashboardReady}
-            // Disable compaction to prevent layout shifts during drag
             compactType={null}
-            // Disable collision prevention for better manual positioning
             preventCollision={true}
-            // Disable bounding to prevent restrictive positioning
             isBounded={false}
-            // Very important for proper cursor tracking during drag/resize
             transformScale={1}
-            // React-Draggable configurations for better cursor tracking
-            draggableOpts={{
-              // Cancel drag on specific elements to improve usability
-              cancel: ".MuiCardContent-root,.MuiIconButton-root",
-              // Improve grid movement smoothness
-              grid: [1, 1],
-              // Important for exact cursor positioning
-              offsetParent: document.body,
-              // Ensure the scale is set to 1 for accurate positioning
-              scale: 1,
-              // Add additional safety to prevent drags on unmounted elements
-              enableUserSelectHack: isDashboardReady,
-            }}
-            // Use a stable key to prevent unnecessary re-initialization
+            draggableOpts={draggableOpts}
             key={`dashboard-grid-${location.pathname}-${isDashboardReady ? "ready" : "loading"}`}
-            // Pass resize start handler
             onResizeStart={onResizeStart}
           >
             {gridChildren}
           </ResponsiveGridLayoutWithWidth>
         </>
       ) : (
-        // Loading state while the grid is mounting
+        // Loading state
         <Box
           sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}
         >
