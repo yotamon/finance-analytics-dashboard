@@ -22,6 +22,26 @@ This document outlines the development guidelines and technology decisions for t
 - **Animation**: Framer Motion
 - **PDF Export**: html2canvas + jspdf
 
+## TypeScript Standards
+
+- **Use TypeScript for all files**: All components, utilities, and hooks must be written in TypeScript
+- **File Extensions**:
+  - React components: `.tsx`
+  - Non-React modules: `.ts`
+  - Type definition files: `.d.ts`
+- **Type Safety Levels**:
+  - Use `strict: true` in tsconfig.json
+  - Avoid using `any` and `unknown` types except in specific parsing functions
+  - Use generics for reusable components
+- **Type Organization**:
+  - Use separate files for related type groups (e.g., `financial.ts`, `chart-types.ts`)
+  - Prefer interfaces for object shapes and component props
+  - Use type aliases for unions, intersections, and complex types
+- **Migration Strategy**:
+  - Prioritize shared components and utilities
+  - Add types incrementally to large files
+  - Use TypeScript's inference where appropriate
+
 ### Development Tools
 
 - **Code Formatting**: Prettier
