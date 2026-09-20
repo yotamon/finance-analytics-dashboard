@@ -1,3 +1,5 @@
+> **Earlier prototype (2025).** Kept for historical reference. For the product engineering work that best represents what I build today, see my [GitHub profile](https://github.com/yotamon) and [professional profile](https://cart-shift.com/en/yotam).
+
 # Financial Dashboard
 
 A modern web application for visualizing and analyzing financial data. Upload your financial data in CSV or Excel format and get beautiful visualizations and insightful analytics.
