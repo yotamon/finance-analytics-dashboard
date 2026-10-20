@@ -1,113 +1,29 @@
-> **Earlier prototype (2025).** Kept for historical reference. For the product engineering work that best represents what I build today, see my [GitHub profile](https://github.com/yotamon) and [professional profile](https://cart-shift.com/en/yotam).
+# Financial Analytics Dashboard — 2025 prototype
 
-# Financial Dashboard
+> Historical React/Vite prototype. This is a demonstration of UI and data-visualization exploration, **not** a complete finance product or maintained production application. For current work see [my profile](https://github.com/yotamon) and [professional portfolio](https://cart-shift.com/en/yotam).
 
-A modern web application for visualizing and analyzing financial data. Upload your financial data in CSV or Excel format and get beautiful visualizations and insightful analytics.
+## What the source contains
 
-## Features
+- React 18, TypeScript, Vite, Material UI and chart/visualization libraries.
+- A dashboard route plus settings, export and diagnostics pages.
+- Global contexts for themes, localization, configuration, data and currency.
+- Upload/export-related components and dependencies; individual file formats and workflows must be verified before being described as end-to-end supported.
 
-- 📊 Interactive data visualizations
-- 📈 Financial KPI tracking
-- 📁 CSV and Excel file support
-- 📱 Responsive design for all devices
-- 🖨️ Export to PDF, Excel, or image formats
-- Modern and responsive UI built with Material UI
-- Dynamic, interactive charts and graphs
-- Customizable dashboard with draggable widgets
-- Dark/light mode theme toggle
-- Data export functionality
-- Map visualization capabilities
-- Multi-language support
-- Currency conversion
+**Important scope limitation:** `src/App.tsx` explicitly renders **under-construction placeholders** for transactions, accounts, categories, budgets, reports and import routes. These should not be presented as completed features.
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 14.x or higher
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/financial-dashboard.git
-   cd financial-dashboard
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   # or
-   yarn
-   ```
-
-3. Start the development server:
-
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-4. Open your browser and navigate to `http://localhost:5173`
-
-## Usage
-
-1. Upload your financial data (CSV or Excel)
-2. View automatically generated visualizations and KPIs
-3. Filter and analyze data with interactive controls
-4. Export your dashboard as PDF, Excel, or images
-
-## Data Format
-
-The dashboard works best with financial data that includes:
-
-- Date columns for time-series analysis
-- Numeric columns for financial metrics
-- Category columns for segmentation
-
-Example CSV format:
-
-```
-Date,Project,Investment,Revenue,EBITDA,IRR
-2023-01-15,Project A,50000,12000,8000,0.24
-2023-02-20,Project B,75000,18000,12000,0.22
-...
-```
-
-## Build for Production
-
-To build the application for production:
+## Explore locally
 
 ```bash
-npm run build
-# or
-yarn build
+git clone https://github.com/yotamon/finance-analytics-dashboard.git
+cd finance-analytics-dashboard
+npm install
+npm run dev
 ```
 
-The built files will be in the `dist` directory.
+The declared build is `npm run build`; `npm run type-check` and `npm run lint` are available. This historical dependency tree was **not re-tested** as part of this documentation update.
 
-## Technologies Used
+## Engineering status
 
-- React with Vite
-- React Router for navigation
-- Material UI for UI components
-- Recharts for data visualization
-- D3.js for advanced visualizations
-- Leaflet for map visualizations
-- PapaParse for CSV parsing
-- XLSX library for Excel file processing
-- Framer Motion for animations
+This repo is retained as an early UI/analytics experiment. It has no claim of verified real financial data integrations, production-grade security, complete features or deployment readiness.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-# finance-analytics-dashboard
-# finance-analytics-dashboard
+If you want evidence of shipped products and engineering decisions, start with [CartShift](https://github.com/CartShift/CartShift-Studio), [Wake My Way](https://github.com/yotamon/WakeMyWay) or [Liquid Loom](https://github.com/yotamon/Liquid-Loom).
